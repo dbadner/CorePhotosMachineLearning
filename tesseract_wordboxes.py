@@ -20,9 +20,9 @@ class TessFindWords:
     # parameterized constructor
     def __init__(self, inputdir: str):
         self.InputDir = inputdir
-        self.CustomConfig = '--psm 6'
+        self.CustomConfig = '--psm 11'
 
-    def RunTess(self, showimages: bool, wbcrop: dict):
+    def RunTess(self, showimages: bool, thresh: bool):  # , wbcrop: dict):
         # construct the argument parse and parse the arguments
         # ap = argparse.ArgumentParser()
         # hack temporary hard code for debugging
@@ -36,19 +36,22 @@ class TessFindWords:
             image_path = self.InputDir + '\\' + image_file
             img: np.ndarray = cv2.imread(image_path)
 
+            exppix = 10 # of pixels by which to expand boxes around words
+
             if type(img) is np.ndarray:  # only process if image file
 
-                cropdims: np.ndarray = wbcrop[image_file]
+                # cropdims: np.ndarray = wbcrop[image_file]
 
-                gray = cv2.cvtColor(img[cropdims[1].astype(int):cropdims[3].astype(int), cropdims[0].astype(int):cropdims[2].astype(int)], cv2.COLOR_BGR2GRAY)
-
+                # gray = cv2.cvtColor(img[cropdims[1].astype(int):cropdims[3].astype(int), cropdims[0].astype(int):cropdims[2].astype(int)], cv2.COLOR_BGR2GRAY)
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                grayh, grayw = gray.shape
                 # show the input image
-                if showimages: cv2.imshow("Input Image", img)
+                # if showimages: cv2.imshow("Input Image", img)
 
                 # check to see if we should apply thresholding to preprocess the
                 # image
-                # if args["preprocess"] == "thresh":
-                #	gray = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+                if thresh:
+                	gray = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
                 # make a check to see if median blurring should be done to remove
                 # noise
                 # elif args["preprocess"] == "blur":
@@ -59,41 +62,97 @@ class TessFindWords:
                 filename = "{}.png".format(os.getpid())
                 cv2.imwrite(filename, gray)
 
-                # load the image as a PIL/Pillow image, apply OCR, and then delete
-                # the temporary file
-                text = pytesseract.image_to_string(Image.open(filename), config=self.CustomConfig)
-                os.remove(filename)
+                # load the image as a PIL/Pillow image
+                imgpillow = Image.open(filename)
+                text = pytesseract.image_to_string(imgpillow, config=self.CustomConfig)
+
                 print(text)
-                file1 = open(r"output/TessOut.txt", "w+")
+                file1 = open(r"output/" + image_file + "TessOutImgToStr.txt", "w+")
                 file1.write(text)
                 file1.close()
 
-                d = pytesseract.image_to_data(img, output_type=Output.DICT, config=self.CustomConfig)
+                d = pytesseract.image_to_data(imgpillow, output_type=Output.DICT, config=self.CustomConfig)
                 n_boxes = len(d['left'])
                 for i in range(n_boxes):
                     (x, y, w, h) = (d['left'][i], d['top'][i], d['width'][i], d['height'][i])
                     cv2.rectangle(gray, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-                # write text output
-                file2 = open(r"output/TessOutData.txt", "w+")
-                for i in range(len(d['text'])):
-                    file2.write('{0}: '.format(i) + d['text'][i] + '\n')
-                file2.close()
-
                 # show the output image
                 # Read image
-                cv2.namedWindow("Output", cv2.WINDOW_NORMAL)  # Create window with freedom of dimensions
-                imS = cv2.resize(gray, (960, 540))  # Resize image
-                if showimages: cv2.imshow("Output Data Image", imS)  # Show image
+                # cv2.namedWindow("Output", cv2.WINDOW_NORMAL)  # Create window with freedom of dimensions
+                # imS = cv2.resize(gray, (960, 540))  # Resize image
+                if showimages: cv2.imshow("Output Data Image", gray)  # Show image
 
-                # img = cv2.imread(args["image"])
+                cv2.waitKey(0)
 
+                # write text output
+                file2 = open(r"output/" + image_file + "TessOutImgToData.txt", "w+")
+                for i in range(len(d['text'])):
+                    file2.write('{0}: '.format(i) + d['text'][i] + '\n')
+                    if d['text'][i] != '': #tesseract recognizes characters in current box
+                        # expand box around each word
+                        top = max(d['top'][i]-exppix,0)
+                        bot = min(d['top'][i]+d['height'][i]+exppix,grayh)
+                        left = max(d['left'][i]-exppix,0)
+                        right = min(d['left'][i]+d['width'][i]+exppix,grayw)
+                        # find individual characters in word and test
+                        self.splitChars(gray[top:bot, left:right], showimages, d['left'][i], d['top'][i], d['width'][i], d['height'][i], d['conf'][i], d['text'][i])
+
+                file2.close()
+
+                """
                 h, w, c = img.shape
-                boxes = pytesseract.image_to_boxes(img, config=self.CustomConfig)
+                boxes = pytesseract.image_to_boxes(imgpillow, config=self.CustomConfig)
                 for b in boxes.splitlines():
                     b = b.split(' ')
                     img = cv2.rectangle(img, (int(b[1]), h - int(b[2])), (int(b[3]), h - int(b[4])), (0, 255, 0), 2)
 
                 if showimages: cv2.imshow('Output Boxes Image', img)
+                """
+
+                # delete the temporary image
+                os.remove(filename)
 
                 cv2.waitKey(0)
+
+    def splitChars(self, imggray, showimages, left, top, width, height, conf, text):
+        # find character locations in current word, pass to Keras to test for
+        # parameters:
+            # imggray - image already cropped to current word
+
+        h, w = imggray.shape
+        boxes = pytesseract.image_to_boxes(imggray , config='--psm 13')
+        #dtemp = pytesseract.image_to_data(imggray, output_type=Output.DICT)
+        for b in boxes.splitlines():
+            b = b.split(' ')
+            imggray = cv2.rectangle(imggray, (int(b[1]), h - int(b[2])), (int(b[3]), h - int(b[4])), (0, 255, 0), 2)
+
+        if showimages: cv2.imshow('Output Character Boxes', imggray)
+
+        cv2.waitKey(0)
+
+
+
+
+
+
+
+
+"""psm tesseract options:
+0 = Orientation and script detection (OSD) only.
+1 = Automatic page segmentation with OSD.
+2 = Automatic page segmentation, but no OSD, or OCR. (not implemented)
+3 = Fully automatic page segmentation, but no OSD. (Default)
+4 = Assume a single column of text of variable sizes.
+5 = Assume a single uniform block of vertically aligned text.
+6 = Assume a single uniform block of text.
+7 = Treat the image as a single text line.
+8 = Treat the image as a single word.
+9 = Treat the image as a single word in a circle.
+10 = Treat the image as a single character.
+11 = Sparse text. Find as much text as possible in no particular order.
+12 = Sparse text with OSD.
+13 = Raw line. Treat the image as a single text line,
+     bypassing hacks that are Tesseract-specific.
+     
+"""

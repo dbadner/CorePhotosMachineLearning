@@ -5,11 +5,11 @@ from detectron2.structures import Instances
 inputdir = r'C:\Users\DBadner\Desktop\input'
 outputdir = r'C:\Users\DBadner\Desktop\input\output'
 
-objWB = wb.FindWhiteBoards(inputdir, outputdir)
-wbextents: dict = objWB.RunModel(True, True)
+#objWB = wb.FindWhiteBoards(inputdir, outputdir)
+#wbextents: dict = objWB.RunModel(True, True)
 
-#objTessWB = tesswb.TessFindWords(inputdir)
-#objTessWB.RunTess(True, wbextents)
+objTessWB = tesswb.TessFindWords(inputdir)
+objTessWB.RunTess(True, True) #, wbextents)
 
 
 
