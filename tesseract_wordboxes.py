@@ -34,7 +34,8 @@ class TessFindWords:
 
         for image_file in os.listdir(self.InputDir):
             image_path = self.InputDir + '\\' + image_file
-            img: np.ndarray = cv2.imread(image_path)
+
+            img = cv2.imread(image_path)
 
             exppix = 10 # of pixels by which to expand boxes around words
 
@@ -51,11 +52,17 @@ class TessFindWords:
                 # check to see if we should apply thresholding to preprocess the
                 # image
                 if thresh:
-                	gray = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+                    #gray = cv2.medianBlur(gray, 3)
+                    #ret, gray = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
+                    gray = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+                    #gray = cv2.adaptiveThreshold(gray,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
+                    ## Applied dilation
+                    kernel3 = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+                    gray = cv2.morphologyEx(gray, cv2.MORPH_ERODE, kernel3)
                 # make a check to see if median blurring should be done to remove
                 # noise
                 # elif args["preprocess"] == "blur":
-                #	gray = cv2.medianBlur(gray, 3)
+
 
                 # write the grayscale image to disk as a temporary file so we can
                 # apply OCR to it
@@ -65,6 +72,7 @@ class TessFindWords:
                 # load the image as a PIL/Pillow image
                 imgpillow = Image.open(filename)
                 text = pytesseract.image_to_string(imgpillow, config=self.CustomConfig)
+                #target = pytesseract.image_to_string(image, lang='eng', boxes=False, config='--psm 10 --oem 3 -c tessedit_char_whitelist=0123456789')
 
                 print(text)
                 file1 = open(r"output/" + image_file + "TessOutImgToStr.txt", "w+")
@@ -83,12 +91,25 @@ class TessFindWords:
                 # imS = cv2.resize(gray, (960, 540))  # Resize image
                 if showimages: cv2.imshow("Output Data Image", gray)  # Show image
 
-                cv2.waitKey(0)
-
                 # write text output
                 file2 = open(r"output/" + image_file + "TessOutImgToData.txt", "w+")
+
+                #get character boxes
+                #h, w, c = img.shape
+                boxes = pytesseract.image_to_boxes(imgpillow, config=self.CustomConfig) #, output_type=Output.DICT, config=self.CustomConfig)
+                for b in boxes.splitlines():
+                    b = b.split(' ')
+                    img = cv2.rectangle(img, (int(b[1]), grayh - int(b[2])), (int(b[3]), grayh - int(b[4])), (0, 255, 0), 2)
+
+                if showimages: cv2.imshow('Output Boxes Image', img)
+
+                cv2.waitKey(0)
+
+                #iterate through words
+
                 for i in range(len(d['text'])):
                     file2.write('{0}: '.format(i) + d['text'][i] + '\n')
+                    """
                     if d['text'][i] != '': #tesseract recognizes characters in current box
                         # expand box around each word
                         top = max(d['top'][i]-exppix,0)
@@ -97,18 +118,10 @@ class TessFindWords:
                         right = min(d['left'][i]+d['width'][i]+exppix,grayw)
                         # find individual characters in word and test
                         self.splitChars(gray[top:bot, left:right], showimages, d['left'][i], d['top'][i], d['width'][i], d['height'][i], d['conf'][i], d['text'][i])
-
+                    """
                 file2.close()
 
-                """
-                h, w, c = img.shape
-                boxes = pytesseract.image_to_boxes(imgpillow, config=self.CustomConfig)
-                for b in boxes.splitlines():
-                    b = b.split(' ')
-                    img = cv2.rectangle(img, (int(b[1]), h - int(b[2])), (int(b[3]), h - int(b[4])), (0, 255, 0), 2)
 
-                if showimages: cv2.imshow('Output Boxes Image', img)
-                """
 
                 # delete the temporary image
                 os.remove(filename)
@@ -121,15 +134,30 @@ class TessFindWords:
             # imggray - image already cropped to current word
 
         h, w = imggray.shape
+
+        #imggray = cv2.GaussianBlur(imggray, (5, 5), 0)
+        ret,imggray = cv2.threshold(imggray, 200, 255, cv2.THRESH_BINARY)# | cv2.THRESH_OTSU)[1]
+        #imggray = cv2.adaptiveThreshold(imggray,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
+        ## Applied dilation
+        #kernel3 = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        #imggray = cv2.morphologyEx(imggray, cv2.MORPH_ERODE, kernel3)
+
         boxes = pytesseract.image_to_boxes(imggray , config='--psm 13')
         #dtemp = pytesseract.image_to_data(imggray, output_type=Output.DICT)
         for b in boxes.splitlines():
             b = b.split(' ')
             imggray = cv2.rectangle(imggray, (int(b[1]), h - int(b[2])), (int(b[3]), h - int(b[4])), (0, 255, 0), 2)
 
+
+
         if showimages: cv2.imshow('Output Character Boxes', imggray)
 
         cv2.waitKey(0)
+
+        #https://medium.com/@quangnhatnguyenle/detect-and-recognize-vehicles-license-plate-with-machine-learning-and-python-part-2-plate-de644de9849f
+        #cont, _ = cv2.findContours(imggray, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        #a = 1
 
 
 
