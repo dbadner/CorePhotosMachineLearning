@@ -62,7 +62,7 @@ def run_test_harness():
     # fit model
     model.fit(trainX, trainY, epochs=10, batch_size=32, verbose=0)
     # save model
-    model.save('mnist_number_model.h5')
+    model.save('tempout.h5')
 
 
 # entry point, run the test harness

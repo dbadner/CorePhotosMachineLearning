@@ -1,12 +1,14 @@
 #from: https://www.pyimagesearch.com/2020/08/17/ocr-with-keras-tensorflow-and-deep-learning/
-#to execute from command line: python train_ocr_model.py --az a_z_handwritten_data.csv --model handwriting.model
+#to execute from command line: python train_ocr_nist_datasets.py --az a_z_handwritten_data.csv --model handwriting.model
 # set the matplotlib backend so figures can be saved in the background
 import matplotlib
 matplotlib.use("Agg")
 # import the necessary packages
-from pyimagesearch.models import ResNet
-from pyimagesearch.az_dataset import load_mnist_dataset
-from pyimagesearch.az_dataset import load_az_dataset
+#from pyimagesearch.models import ResNet
+#from pyimagesearch.az_dataset import load_mnist_dataset
+#from pyimagesearch.az_dataset import load_az_dataset
+import LoadNistDatasets as impData
+#import Keras_MNist_Train as kerasMNistPy
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.optimizers import SGD
 from sklearn.preprocessing import LabelBinarizer
@@ -17,16 +19,42 @@ import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 import cv2
+from keras.datasets import mnist
+from keras.utils import to_categorical
+from keras.models import Sequential
+from keras.layers import Conv2D
+from keras.layers import MaxPooling2D
+from keras.layers import Dense
+from keras.layers import Flatten
+from keras.optimizers import SGD
 
+
+"""
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
-ap.add_argument("-a", "--az", required=True,
+ap.add_argument("-a", "--az", default="input\\a_z_handwritten_data.csv",
 	help="path to A-Z dataset")
-ap.add_argument("-m", "--model", type=str, required=True,
+ap.add_argument("-m", "--model", type=str, default="handwriting.model",
 	help="path to output trained handwriting recognition model")
 ap.add_argument("-p", "--plot", type=str, default="plot.png",
 	help="path to output training history file")
 args = vars(ap.parse_args())
+"""
+
+def define_model2():
+    model = Sequential()
+    model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', input_shape=(28, 28, 1)))
+    model.add(MaxPooling2D((2, 2)))
+    model.add(Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform'))
+    model.add(Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform'))
+    model.add(MaxPooling2D((2, 2)))
+    model.add(Flatten())
+    model.add(Dense(100, activation='relu', kernel_initializer='he_uniform'))
+    model.add(Dense(36, activation='softmax'))
+    # compile model
+    opt = SGD(lr=0.01, momentum=0.9)
+    model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+    return model
 
 # initialize the number of epochs to train for, initial learning rate,
 # and batch size
@@ -35,8 +63,11 @@ INIT_LR = 1e-1
 BS = 128
 # load the A-Z and MNIST datasets, respectively
 print("[INFO] loading datasets...")
-(azData, azLabels) = load_az_dataset(args["az"])
-(digitsData, digitsLabels) = load_mnist_dataset()
+
+objImp = impData.LoadNistDatasets()
+
+(azData, azLabels) = objImp.load_az_dataset(r'input\a_z_handwritten_data.csv')
+(digitsData, digitsLabels) = objImp.load_mnist_dataset()
 
 # the MNIST dataset occupies the labels 0-9, so let's add 10 to every
 # A-Z label to ensure the A-Z characters are not incorrectly labeled
@@ -48,7 +79,7 @@ labels = np.hstack([azLabels, digitsLabels])
 # each image in the A-Z and MNIST digts datasets are 28x28 pixels;
 # however, the architecture we're using is designed for 32x32 images,
 # so we need to resize them to 32x32
-data = [cv2.resize(image, (32, 32)) for image in data]
+# data = [cv2.resize(image, (32, 32)) for image in data]
 data = np.array(data, dtype="float32")
 # add a channel dimension to every image in the dataset and scale the
 # pixel intensities of the images from [0, 255] down to [0, 1]
@@ -70,7 +101,22 @@ for i in range(0, len(classTotals)):
 (trainX, testX, trainY, testY) = train_test_split(data,
 	labels, test_size=0.20, stratify=labels, random_state=42)
 
+print("[INFO] training model...")
+# define model using MNist model
+#modelclass = kerasMNistPy.Keras_MNist_Train()
+#model = modelclass.define_model()
 
+model = define_model2()
+# fit model
+model.fit(trainX, trainY, epochs=10, batch_size=32, verbose=0, class_weight=classWeight)
+# save model
+model.save('number_az_model.h5')
+print("[INFO] training complete.")
+
+
+
+
+"""
 # construct the image generator for data augmentation
 aug = ImageDataGenerator(
 	rotation_range=10,
@@ -81,13 +127,12 @@ aug = ImageDataGenerator(
 	horizontal_flip=False,
 	fill_mode="nearest")
 
+
 # initialize and compile our deep neural network
 print("[INFO] compiling model...")
 opt = SGD(lr=INIT_LR, decay=INIT_LR / EPOCHS)
-model = ResNet.build(32, 32, 1, len(le.classes_), (3, 3, 3),
-	(64, 64, 128, 256), reg=0.0005)
-model.compile(loss="categorical_crossentropy", optimizer=opt,
-	metrics=["accuracy"])
+model = ResNet.build(32, 32, 1, len(le.classes_), (3, 3, 3), (64, 64, 128, 256), reg=0.0005)
+model.compile(loss="categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
 
 # train the network
 print("[INFO] training network...")
@@ -152,3 +197,4 @@ montage = build_montages(images, (96, 96), (7, 7))[0]
 # show the output montage
 cv2.imshow("OCR Results", montage)
 cv2.waitKey(0)
+"""
