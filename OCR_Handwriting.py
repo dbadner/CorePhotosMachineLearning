@@ -1,4 +1,5 @@
 #from: https://www.pyimagesearch.com/2020/08/24/ocr-handwriting-recognition-with-opencv-keras-and-tensorflow/
+#identify characters within an image
 # import the necessary packages
 from tensorflow.keras.models import load_model
 from imutils.contours import sort_contours
@@ -23,7 +24,7 @@ model = load_model(args["model"])
 """
 
 inputdir = r'C:\Users\DBadner\Desktop\input'
-model = load_model('final_model.h5')
+model = load_model('mnist_number_model.h5')
 
 for image_file in os.listdir(inputdir):
 

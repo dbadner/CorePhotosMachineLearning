@@ -24,7 +24,7 @@ def load_image(filename):
 def run_example():
 
     # load model
-    model = load_model('final_model.h5')
+    model = load_model('mnist_number_model.h5')
 
     for i in range(1, 6):
         filenm = 'input\\char{0}.jpg'.format(i)
