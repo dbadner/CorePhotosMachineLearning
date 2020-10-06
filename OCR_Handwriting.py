@@ -24,7 +24,7 @@ model = load_model(args["model"])
 """
 
 inputdir = r'C:\Users\DBadner\Desktop\input'
-model = load_model('mnist_number_model.h5')
+model = load_model('number_az_model.h5')
 
 for image_file in os.listdir(inputdir):
 
@@ -98,7 +98,7 @@ for image_file in os.listdir(inputdir):
 		preds = model.predict(chars)
 		# define the list of label names
 		labelNames = "0123456789"
-		#labelNames += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		labelNames += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 		labelNames = [l for l in labelNames]
 
 		# loop over the predictions and bounding box locations together

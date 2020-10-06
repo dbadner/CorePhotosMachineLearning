@@ -3,11 +3,12 @@
 # import the necessary packages
 from tensorflow.keras.datasets import mnist
 import numpy as np
+import h5py
 
 
 class LoadNistDatasets:
 
-    def load_az_dataset(self, datasetPath):
+    def load_az_dataset_csv(self, datasetPath):
         # initialize the list of data and labels
         data = []
         labels = []
@@ -30,6 +31,15 @@ class LoadNistDatasets:
         labels = np.array(labels, dtype="int")
         # return a 2-tuple of the A-Z data and labels
         return (data, labels)
+
+    def load_az_dataset(self, datasetPath):
+        #load the az dataset saved in hdf5 file
+        # retrieve datasets
+        f2 = h5py.File(datasetPath, 'r')
+        azDataRead = f2['azData'][:]
+        azLabelsRead = f2['azLabels'][:]
+        f2.close()
+        return (azDataRead, azLabelsRead)
 
     def load_mnist_dataset(self):
         # load the MNIST dataset and stack the training data and testing

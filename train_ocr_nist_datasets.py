@@ -1,14 +1,15 @@
-#from: https://www.pyimagesearch.com/2020/08/17/ocr-with-keras-tensorflow-and-deep-learning/
-#to execute from command line: python train_ocr_nist_datasets.py --az a_z_handwritten_data.csv --model handwriting.model
+# from: https://www.pyimagesearch.com/2020/08/17/ocr-with-keras-tensorflow-and-deep-learning/
+# to execute from command line: python train_ocr_nist_datasets.py --az a_z_handwritten_data.csv --model handwriting.model
 # set the matplotlib backend so figures can be saved in the background
 import matplotlib
+
 matplotlib.use("Agg")
 # import the necessary packages
-#from pyimagesearch.models import ResNet
-#from pyimagesearch.az_dataset import load_mnist_dataset
-#from pyimagesearch.az_dataset import load_az_dataset
+# from pyimagesearch.models import ResNet
+# from pyimagesearch.az_dataset import load_mnist_dataset
+# from pyimagesearch.az_dataset import load_az_dataset
 import LoadNistDatasets as impData
-#import Keras_MNist_Train as kerasMNistPy
+# import Keras_MNist_Train as kerasMNistPy
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.optimizers import SGD
 from sklearn.preprocessing import LabelBinarizer
@@ -21,13 +22,13 @@ import argparse
 import cv2
 from keras.datasets import mnist
 from keras.utils import to_categorical
+from keras.models import load_model
 from keras.models import Sequential
 from keras.layers import Conv2D
 from keras.layers import MaxPooling2D
 from keras.layers import Dense
 from keras.layers import Flatten
 from keras.optimizers import SGD
-
 
 """
 # construct the argument parser and parse the arguments
@@ -41,6 +42,8 @@ ap.add_argument("-p", "--plot", type=str, default="plot.png",
 args = vars(ap.parse_args())
 """
 
+trainnewmodel = True
+
 def define_model2():
     model = Sequential()
     model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', input_shape=(28, 28, 1)))
@@ -52,21 +55,23 @@ def define_model2():
     model.add(Dense(100, activation='relu', kernel_initializer='he_uniform'))
     model.add(Dense(36, activation='softmax'))
     # compile model
-    opt = SGD(lr=0.01, momentum=0.9)
+    opt = SGD(lr=INIT_LR, momentum=0.9)
     model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
     return model
 
+
 # initialize the number of epochs to train for, initial learning rate,
 # and batch size
-EPOCHS = 50
-INIT_LR = 1e-1
-BS = 128
+EPOCHS = 10
+INIT_LR = 0.01
+BS = 32
 # load the A-Z and MNIST datasets, respectively
 print("[INFO] loading datasets...")
 
 objImp = impData.LoadNistDatasets()
 
-(azData, azLabels) = objImp.load_az_dataset(r'input\a_z_handwritten_data.csv')
+#(azData, azLabels) = objImp.load_az_dataset(r'input\a_z_handwritten_data.csv')
+(azData, azLabels) = objImp.load_az_dataset(r'input\az_dataset.hdf5')
 (digitsData, digitsLabels) = objImp.load_mnist_dataset()
 
 # the MNIST dataset occupies the labels 0-9, so let's add 10 to every
@@ -95,26 +100,27 @@ classTotals = labels.sum(axis=0)
 classWeight = {}
 # loop over all classes and calculate the class weight
 for i in range(0, len(classTotals)):
-	classWeight[i] = classTotals.max() / classTotals[i]
+    classWeight[i] = classTotals.max() / classTotals[i]
 # partition the data into training and testing splits using 80% of
 # the data for training and the remaining 20% for testing
-(trainX, testX, trainY, testY) = train_test_split(data,
-	labels, test_size=0.20, stratify=labels, random_state=42)
-
-print("[INFO] training model...")
-# define model using MNist model
-#modelclass = kerasMNistPy.Keras_MNist_Train()
-#model = modelclass.define_model()
-
-model = define_model2()
-# fit model
-model.fit(trainX, trainY, epochs=10, batch_size=32, verbose=0, class_weight=classWeight)
-# save model
-model.save('number_az_model.h5')
-print("[INFO] training complete.")
+(trainX, testX, trainY, testY) = train_test_split(data, labels, test_size=0.70, stratify=labels, random_state=42) ###CHANGE BACK TO 0.2
 
 
+if trainnewmodel:
+    print("[INFO] training model...")
+    # define model using MNist model
+    # modelclass = kerasMNistPy.Keras_MNist_Train()
+    # model = modelclass.define_model()
 
+    model = define_model2()
+    # fit model
+    model.fit(trainX, trainY, epochs=EPOCHS, batch_size=BS, verbose=0) #, class_weight=classWeight)
+    # save model
+    model.save('number_az_model.h5')
+    print("[INFO] training complete.")
+else:
+    print("[INFO] loading model...")
+    model = load_model('number_az_model.h5')
 
 """
 # construct the image generator for data augmentation
@@ -144,57 +150,62 @@ H = model.fit(
 	class_weight=classWeight,
 	verbose=1)
 # define the list of label names
+
+"""
+
 labelNames = "0123456789"
 labelNames += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 labelNames = [l for l in labelNames]
+
 # evaluate the network
 print("[INFO] evaluating network...")
 predictions = model.predict(testX, batch_size=BS)
 print(classification_report(testY.argmax(axis=1),
 	predictions.argmax(axis=1), target_names=labelNames))
 
+"""
 # save the model to disk
-print("[INFO] serializing network...")
-model.save(args["model"], save_format="h5")
+#print("[INFO] serializing network...")
+#model.save(args["model"], save_format="h5")
 # construct a plot that plots and saves the training history
 N = np.arange(0, EPOCHS)
 plt.style.use("ggplot")
 plt.figure()
-plt.plot(N, H.history["loss"], label="train_loss")
-plt.plot(N, H.history["val_loss"], label="val_loss")
+plt.plot(N, model.history["loss"], label="train_loss")
+plt.plot(N, model.history["val_loss"], label="val_loss")
 plt.title("Training Loss and Accuracy")
 plt.xlabel("Epoch #")
 plt.ylabel("Loss/Accuracy")
 plt.legend(loc="lower left")
-plt.savefig(args["plot"])
+plt.savefig("plot.png")
+"""
 
 # initialize our list of output test images
 images = []
 # randomly select a few testing characters
 for i in np.random.choice(np.arange(0, len(testY)), size=(49,)):
-	# classify the character
-	probs = model.predict(testX[np.newaxis, i])
-	prediction = probs.argmax(axis=1)
-	label = labelNames[prediction[0]]
-	# extract the image from the test data and initialize the text
-	# label color as green (correct)
-	image = (testX[i] * 255).astype("uint8")
-	color = (0, 255, 0)
-	# otherwise, the class label prediction is incorrect
-	if prediction[0] != np.argmax(testY[i]):
-		color = (0, 0, 255)
-	# merge the channels into one image, resize the image from 32x32
-	# to 96x96 so we can better see it and then draw the predicted
-	# label on the image
-	image = cv2.merge([image] * 3)
-	image = cv2.resize(image, (96, 96), interpolation=cv2.INTER_LINEAR)
-	cv2.putText(image, label, (5, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-		color, 2)
-	# add the image to our list of output images
-	images.append(image)
+    # classify the character
+    probs = model.predict(testX[np.newaxis, i])
+    prediction = probs.argmax(axis=1)
+    label = labelNames[prediction[0]]
+    # extract the image from the test data and initialize the text
+    # label color as green (correct)
+    image = (testX[i] * 255).astype("uint8")
+    color = (0, 255, 0)
+    # otherwise, the class label prediction is incorrect
+    if prediction[0] != np.argmax(testY[i]):
+        color = (0, 0, 255)
+    # merge the channels into one image, resize the image from 32x32
+    # to 96x96 so we can better see it and then draw the predicted
+    # label on the image
+    image = cv2.merge([image] * 3)
+    image = cv2.resize(image, (96, 96), interpolation=cv2.INTER_LINEAR)
+    cv2.putText(image, label, (5, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                color, 2)
+    # add the image to our list of output images
+    images.append(image)
 # construct the montage for the images
 montage = build_montages(images, (96, 96), (7, 7))[0]
 # show the output montage
 cv2.imshow("OCR Results", montage)
 cv2.waitKey(0)
-"""
