@@ -1,4 +1,5 @@
 # Code modified from: https://towardsdatascience.com/understanding-detectron2-demo-bc648ea569e5
+#trained model to find whiteboards in photographs using detectron2
 
 import cv2
 import numpy as np
@@ -16,11 +17,12 @@ import tensorflow as tf
 from PIL import Image
 import torch
 
+
 class FindWhiteBoards:
-    #class variables
-    InputDir: str  #input directory path with photographs
-    OutputDir: str #output directory for temp output files
-    
+    # class variables
+    InputDir: str  # input directory path with photographs
+    OutputDir: str  # output directory for temp output files
+
     # parameterized constructor
     def __init__(self, inputdir: str, outputdir: str):
         self.InputDir = inputdir
@@ -48,16 +50,16 @@ class FindWhiteBoards:
             image_path = self.InputDir + '\\' + image_file
             img: np.ndarray = cv2.imread(image_path)
 
-            if type(img) is np.ndarray: #only process if image file
+            if type(img) is np.ndarray:  # only process if image file
 
-                output: Instances = predictor(img)["instances"] #predict
+                output: Instances = predictor(img)["instances"]  # predict
 
                 obj: dict = output.get_fields()
 
                 scores: np.ndarray = obj['scores'].cpu().numpy()
                 maxscore: float = 0
                 indmaxscore: int = 0
-                for i in range(len(scores)-1):
+                for i in range(len(scores) - 1):
                     if scores[i] > maxscore:
                         maxscore = scores[i]
                         indmaxscore = i
@@ -65,14 +67,14 @@ class FindWhiteBoards:
                 if len(scores) > 0:
                     box: np.ndarray = obj['pred_boxes'].tensor.cpu().numpy()[indmaxscore]
                 else:
-                    box = np.ones(1)*(-1)
+                    box = np.ones(1) * (-1)
 
                 # outputlist.append(output)
                 outputDict[image_file] = box
 
                 if saveCropOutput and len(scores) > 0:
-                    #crop and save the image
-                    #https://www.pyimagesearch.com/2014/01/20/basic-image-manipulations-in-python-and-opencv-resizing-scaling-rotating-and-cropping/
+                    # crop and save the image
+                    # https://www.pyimagesearch.com/2014/01/20/basic-image-manipulations-in-python-and-opencv-resizing-scaling-rotating-and-cropping/
                     crop_img = img[box[1].astype(int):box[3].astype(int), box[0].astype(int):box[2].astype(int)]
                     # get file name without extension, -1 to remove "." at the end
                     out_file_name: str = self.OutputDir + '\\' + re.search(r"(.*)\.", image_file).group(0)[:-1]
@@ -80,7 +82,7 @@ class FindWhiteBoards:
                     cv2.imwrite(out_file_name, crop_img)
 
                 if saveAnnoOutput:
-                    #draw output and save to png
+                    # draw output and save to png
                     v = Visualizer(img[:, :, ::-1], MetadataCatalog.get("wb_test"), scale=1.0)
                     result: VisImage = v.draw_instance_predictions(output.to("cpu"))
                     result_image: np.ndarray = result.get_image()[:, :, ::-1]
@@ -91,7 +93,7 @@ class FindWhiteBoards:
 
                     cv2.imwrite(out_file_name, result_image)
 
-                    #code for displaying image:
+                    # code for displaying image:
                     # imgout = cv2.imread(out_file_name)
                     # cv2.imshow('Output Image', imgout)
 

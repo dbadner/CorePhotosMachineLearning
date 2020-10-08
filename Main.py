@@ -1,15 +1,19 @@
 import Detectron2WBEval as wb
+import OCR_Handwriting as hw
 import tesseract_wordboxes as tesswb
 from detectron2.structures import Instances
 
-inputdir = r'C:\Users\DBadner\Desktop\input'
-outputdir = r'C:\Users\DBadner\Desktop\input\output'
+inputdir = r'inputimages'
+outputdir = r'inputimages\output'
 
 #objWB = wb.FindWhiteBoards(inputdir, outputdir)
-#wbextents: dict = objWB.RunModel(True, True)
+#wbextents: dict = objWB.RunModel(True, False)
 
-objTessWB = tesswb.TessFindWords(inputdir)
-objTessWB.RunTess(True, True) #, wbextents)
+objHW = hw.FindCharsWords(outputdir)
+objHW.OCRHandwriting()
+
+#objTessWB = tesswb.TessFindWords(inputdir)
+#objTessWB.RunTess(True, True) #, wbextents)
 
 
 

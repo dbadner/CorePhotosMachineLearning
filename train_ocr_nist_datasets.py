@@ -103,7 +103,7 @@ for i in range(0, len(classTotals)):
     classWeight[i] = classTotals.max() / classTotals[i]
 # partition the data into training and testing splits using 80% of
 # the data for training and the remaining 20% for testing
-(trainX, testX, trainY, testY) = train_test_split(data, labels, test_size=0.70, stratify=labels, random_state=42) ###CHANGE BACK TO 0.2
+(trainX, testX, trainY, testY) = train_test_split(data, labels, test_size=0.20, stratify=labels, random_state=42)
 
 
 if trainnewmodel:
@@ -120,7 +120,7 @@ if trainnewmodel:
     print("[INFO] training complete.")
 else:
     print("[INFO] loading model...")
-    model = load_model('number_az_model.h5')
+    model = load_model('number_az_model_firstpass.h5')
 
 """
 # construct the image generator for data augmentation
