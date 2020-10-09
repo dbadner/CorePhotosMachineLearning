@@ -50,9 +50,10 @@ class FindCharsWords:
 		# convert image to grayscale, and blur it to reduce noise
 		gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 		gray = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+		#gray = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_TRIANGLE)[1]
 		# gray = cv2.GaussianBlur(gray, (5, 5), 0)
 		# Applied dilation
-		kernel3 = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+		kernel3 = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
 		gray = cv2.morphologyEx(gray, cv2.MORPH_ERODE, kernel3)
 		#cv2.imshow("Preprocessed", gray)
 		#cv2.waitKey(0)
@@ -61,12 +62,18 @@ class FindCharsWords:
 	def FindCharsWords(self, gray):
 		# perform edge detection, find contours in the edge map, and sort the
 		# resulting contours from left-to-right, find words
+		#fac = 2 #factor by which to temporarily upscale images to improve edge detection
+		#tH, tW = gray.shape
+		#imgTmp = self.ResizeImage(gray, tW * fac, tH * fac) #temporarily upsize by fac to make edge detection work better
+
 		edged = cv2.Canny(gray, 30, 150)
-		cnts = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+		#cv2.imshow("padded", edged)
+		#cv2.waitKey(0)
+		cnts = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) #cv2.CHAIN_APPROX_NONE)
 		cnts = imutils.grab_contours(cnts)
 		cnts = sort_contours(cnts, method="left-to-right")[0]
 		# initialize the list of contour bounding boxes and associated
-
+		#cnts = cnts / fac
 		# characters that we'll be OCR'ing
 		# chars = []  # pairs of character images and dimensions
 		# loop over the contours and populate if they pass the criteria
@@ -84,8 +91,8 @@ class FindCharsWords:
 			(x, y, w, h) = cv2.boundingRect(c)
 			# filter out bounding boxes, ensuring they are neither too small
 			# nor too large
-			if (w >= 5 and w <= 150) and (h >= 15 and h <= 120):
-
+			#if (w >= 5 and w <= 150) and (h >= 8 and h <= 120):
+			if (w >= 5 and w <= 375) and (h >= 15 and h <= 300):
 				# extract the character and threshold it to make the character
 				# appear as *white* (foreground) on a *black* background, then
 				# grab the width and height of the thresholded image
@@ -112,6 +119,31 @@ class FindCharsWords:
 				chars.append((padded, (x, y, w, h)))  # update our list of characters that will be OCR'd
 				#charDict[i] = (padded, (x, y, w, h))
 
+		# check each character to make sure not overlapping with an another character, discard if so
+		removeList = []
+		for i in range(len(chars)):
+			charI = chars[i]
+			(x, y, w, h) = charI[1]  # read in character dimensions
+			discard: bool = False
+			for j in range(len(chars)):
+				if j == i:
+					continue
+				charJ = chars[j]
+				(xC, yC, wC, hC) = charJ[1]  # read in character dimensions
+				#xFuz = wC * 0.1 #if over 60% overlap in x and y then remove
+				#yFuz = hC * 0.1
+				if w * h <= wC * hC:  # only discard the smaller of the two
+					if ((x > xC and x < xC + wC) or (x + w > xC and x + w < xC + wC)) and ((y > yC and y < yC + hC) or (y + h > yC and y + h < yC + hC)):
+					#if x > xC - xFuz and x + w < xC + wC + xFuz and y > yC - yFuz and y + h < yC + hC + yFuz:
+						#there is overlap, determine how much as proportion of smaller item
+						aOvl = (min(x+w,xC+wC) - max(x,xC)) * (min(y+h,yC+hC) - max(y,yC))
+						percOvl = aOvl/(w*h)
+						if percOvl > 0.6: # overlap > 60%
+							removeList.append(i)
+							break
+		for i in range(len(removeList)-1,-1,-1):
+			del chars[removeList[i]]
+
 		wordList = []
 		#now loop through chars and assign to words
 		for i in range(len(chars)):
@@ -124,7 +156,7 @@ class FindCharsWords:
 				(xW, yW, wW, hW) = word[0] #read in word dimensions
 				#compare to determine whether character is part of current word
 				xDif = x - (xW+wW) #check x
-				if xDif < hW/2: #compare to word height
+				if xDif < hW: #compare to word height
 					#check y-overlap
 					if not(y > (yW + hW) or (y + h) < yW):#need to also check amount of overlap
 						ovl = (min(y+h,yW+hW) - max(y,yW)) / (max(y+h,yW+hW) - min(y,yW)) #percentage overlap
@@ -139,7 +171,7 @@ class FindCharsWords:
 								word[1].append(i)
 								#word[0] = (xW, yWN, wWN, hWN)
 								wordList[j] = (((xW, yWN, wWN, hWN), word[1]))
-								continue  # exit for loop
+								break  # exit for loop
 			if not(fndWord): #start a new word
 				wordList.append((char[1],[i])) #add dimensions of first character and charID to the wordlist
 		# final loop to throw out chars that are not part of words (i.e. wordList entries with only 1 char)
@@ -152,7 +184,7 @@ class FindCharsWords:
 			image_path = self.InputDir + '\\' + image_file
 			image = cv2.imread(image_path)
 			if type(image) is np.ndarray:  # only process if image file
-				image = self.ResizeImage(image, 800, 800)
+				image = self.ResizeImage(image, 2000, 2000)
 				gray = self.Preprocess(image) #preprocess the image, convert to gray
 				chars, wordList = self.FindCharsWords(gray) #find characters and words, store as [image, (x, y, w, h)]
 
@@ -184,6 +216,8 @@ class FindCharsWords:
 						(x,y,w,h) = words[0]
 						cv2.rectangle(image, (x, y), (x + w, y + h), (255, 51, 204), 2)
 				# show the image
-				cv2.imshow("Image", image)
-				cv2.imshow("Gray", gray)
+				imageS = self.ResizeImage(image, 800, 800)
+				cv2.imshow("Image", imageS)
+				grayS = self.ResizeImage(gray, 800, 800)
+				cv2.imshow("Gray", grayS)
 				cv2.waitKey(0)
