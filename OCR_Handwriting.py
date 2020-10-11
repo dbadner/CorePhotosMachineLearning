@@ -108,11 +108,7 @@ class FindCharsWords:
 				# grab the width and height of the thresholded image
 				roi = gray[y:y + h, x:x + w]
 				thresh = cv2.threshold(roi, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
-				if i > 153:
-					xxx = 'temp for debugging'
-					#grayS = self.ResizeImage(thresh, 800, 800)
-					#cv2.imshow("Preprocessed", grayS)
-					#cv2.waitKey(0)
+
 				thresh = self.ResizeImage(thresh, 22, 22) #resize the image
 
 				# re-grab the image dimensions (now that its been resized)
@@ -135,6 +131,65 @@ class FindCharsWords:
 				#charDict[i] = (padded, (x, y, w, h))
 
 		# check each character to make sure not overlapping with an another character, discard if so
+		#removeList = []
+		removeList = self.CheckOverlap(chars)
+		for i in range(len(removeList)-1,-1,-1):
+			del chars[removeList[i]]
+
+		wordList = []
+		#now loop through chars and assign to words
+		for i in range(len(chars)):
+			char = chars[i]
+			(x, y, w, h) = char[1] #read in character dimensions
+			#charDict[i] = char #store in dictionary
+			fndWord = False
+			for j in range(len(wordList)): #loop through existing word list
+				word = wordList[j]
+				(xW, yW, wW, hW) = word.dims #read in word dimensions
+				(xC, yC, wC, hC) = chars[word.charList[len(word.charList)-1]][1] #read in last character dimensions in word
+				#compare to determine whether character is part of current word
+				xDif = x - (xW+wW) #check x
+				if xDif < hW/1.3: #compare to word height to check if close enough to word to be included (i.e. whitespace between)
+					#check y-overlap against previous character in word (instead of fill word
+					if not(y > (yC + hC) or (y + h) < yC):#need to also check amount of overlap
+						ovl = (min(y+h,yC+hC) - max(y,yC)) / (max(y+h,yC+hC) - min(y,yC)) #percentage overlap
+						if ovl > 0.3: #set 30% overlap threshold
+							htRatio = h / hW
+							if htRatio < 2.5 and htRatio > 0.3: #thresholds for height ratios
+								if len(word.charList) <= 3 or (len(word.charList) > 2 and (max(xDif,0) - word.avgCharSpac) / hW < 0.5):
+									#final check - look for a change in average spacing between characters in a word
+									fndWord = True
+									#update wordList parameters
+									yWN = min(y,yW)
+									hWN = max(y+h, yW+hW) - yWN
+									wWN = x + w - xW
+									word.charList.append(i)
+									word.dims = (xW, yWN, wWN, hWN)
+									#assign avg word spacing
+									word.avgCharSpac = (word.avgCharSpac + max(xDif,0)) / (len(word.charList) - 1)
+									#wordList[j] = word
+									#word[0] = (xW, yWN, wWN, hWN)
+									#wordList[j] = (((xW, yWN, wWN, hWN), word[1]))
+									break  # exit for loop
+								#else:
+									#xxx = 1
+			if not(fndWord): #start a new word
+				newWord = Word()
+				newWord.dims = char[1]
+				newWord.charList = [i]
+				wordList.append(newWord)
+				#wordList.append((char[1],[i])) #add dimensions of first character and charID to the wordlist
+		# final loop to throw out words that only have one character
+		for i in range(len(wordList)-1,-1,-1):
+			words = wordList[i]
+			if len(words.charList) < 2:
+				del wordList[i]
+
+		return chars, wordList
+
+	def CheckOverlap(self, chars):
+		# check each character to make sure not overlapping with an another character
+		#chars [ndarray[28x28x1], (x,y,w,h)] - list of characters
 		removeList = []
 		for i in range(len(chars)):
 			charI = chars[i]
@@ -156,46 +211,7 @@ class FindCharsWords:
 						if percOvl > 0.6: # overlap > 60%
 							removeList.append(i)
 							break
-		for i in range(len(removeList)-1,-1,-1):
-			del chars[removeList[i]]
-
-		wordList = []
-		#now loop through chars and assign to words
-		for i in range(len(chars)):
-			char = chars[i]
-			(x, y, w, h) = char[1] #read in character dimensions
-			#charDict[i] = char #store in dictionary
-			fndWord = False
-			for j in range(len(wordList)): #loop through existing word list
-				word = wordList[j]
-				(xW, yW, wW, hW) = word[0] #read in word dimensions
-				#compare to determine whether character is part of current word
-				xDif = x - (xW+wW) #check x
-				if xDif < hW/1.3: #compare to word height
-					#check y-overlap
-					if not(y > (yW + hW) or (y + h) < yW):#need to also check amount of overlap
-						ovl = (min(y+h,yW+hW) - max(y,yW)) / (max(y+h,yW+hW) - min(y,yW)) #percentage overlap
-						if ovl > 0.3: #set 30% overlap threshold
-							htRatio = h / hW
-							if htRatio < 2.5 and htRatio > 0.3: #thresholds for height ratios
-								fndWord = True
-								#update wordList parameters
-								yWN = min(y,yW)
-								hWN = max(y+h, yW+hW) - yWN
-								wWN = x + w - xW
-								word[1].append(i)
-								#word[0] = (xW, yWN, wWN, hWN)
-								wordList[j] = (((xW, yWN, wWN, hWN), word[1]))
-								break  # exit for loop
-			if not(fndWord): #start a new word
-				wordList.append((char[1],[i])) #add dimensions of first character and charID to the wordlist
-		# final loop to throw out words that only have one character
-		for i in range(len(wordList)-1,-1,-1):
-			words = wordList[i]
-			if len(words[1]) < 2:
-				del wordList[i]
-
-		return chars, wordList
+		return removeList
 
 	def RunModel(self, chars, wordList, gray, image):
 		#run the model to predict characters
@@ -253,7 +269,7 @@ class FindCharsWords:
 		for wInd in range(len(wordList)):
 			words = wordList[wInd]
 			#if len(words[1]) > 1: #show wordBoxes if > 1 character
-			(x, y, w, h) = words[0]
+			(x, y, w, h) = words.dims
 			cv2.rectangle(imgAnno, (x, y), (x + w, y + h), (255, 51, 204), 2) #rectangle around word
 
 		# show the image
@@ -269,7 +285,7 @@ class FindCharsWords:
 			probNum = 0 #probability that word contains a number
 			wordChars = []  # list of characters in word
 			#loop over characters in word and determine probability of #,
-			for i in words[1]: #for each ith character
+			for i in words.charList: #for each ith character
 				prob = preds[i]
 				for j in range(10): #loop through probability of number characters
 					probNum += prob[j]
@@ -278,7 +294,7 @@ class FindCharsWords:
 				# loop through keywords
 
 
-			probNum /= len(words[1])
+			probNum /= len(words.charList)
 			probNumList.append(probNum)
 			wordCharList.append(wordChars)
 			#else: #length of word = 1
@@ -288,9 +304,9 @@ class FindCharsWords:
 			for k in range(len(keyWordListInd)):
 				keyWordInd = keyWordListInd[k]
 				probKeyWord = 0
-				if len(words[1]) == len(keyWordInd):  # same length, so check probability
+				if len(words.charList) == len(keyWordInd):  # same length, so check probability
 					for i in range(len(keyWordInd)):  # for each ith character
-						ind = words[1][i]
+						ind = words.charList[i]
 						probKeyWord += preds[ind][keyWordInd[i]] #find probability that ith characters match
 					probKeyWord /= len(keyWordInd)
 					#now compare to list, and replace if the new highest likelihool of word is found
@@ -313,11 +329,11 @@ class FindCharsWords:
 			elif k == 3 and maxProbKeyWordList[3] < maxProbKeyWordList[2]:
 				execute = False
 			if execute:
-				(x, y, w, h) = wordList[maxProbKeyWordListInd[k]][0]
+				(x, y, w, h) = wordList[maxProbKeyWordListInd[k]].dims
 				cv2.rectangle(imgKeyWords, (x, y), (x + w, y + h), (0, 255, 0), 2)
 				for i in range(len(keyWordListInd[k])): #characters in keyword
 					label = keyWordList[k][i]
-					charInd = wordList[maxProbKeyWordListInd[k]][1][i]
+					charInd = wordList[maxProbKeyWordListInd[k]].charList[i]
 					(xC, yC, wC, hC) = boxes[charInd]
 					cv2.putText(imgKeyWords, label, (xC - 10, yC - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 2)
 		imageS = self.ResizeImage(imgKeyWords, 800, 800)
@@ -337,5 +353,13 @@ class FindCharsWords:
 				#cv2.waitKey(0)
 				chars, wordList = self.FindCharsWords(gray) #find characters and words, store as [image, (x, y, w, h)]
 				self.RunModel(chars, wordList, gray, image) #run the model to predict characters
+
+
+class Word:
+	dims = (0,0,0,0)  #= np.zeros(4, dtype=int) #x,y,w,h
+	charList = [] #list of character indices
+	avgCharSpac: int = 0 #initialize average character spacing to -1
+	#def __init__(self):
+		#self.dims = (0,0,0,0)
 
 
