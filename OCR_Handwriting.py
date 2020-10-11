@@ -40,10 +40,18 @@ class FindCharsWords:
 			(tH, tW, tmp) = img.shape
 		# if the width is greater than the height (usually will be), resize along the width dimension
 		if tW/tH > maxW/maxH: #width is the defining dimension along which to resize
-			img = imutils.resize(img, width=maxW)
+			hCheck = tH/(tW/maxW)
+			if hCheck > 1.00001: #check not < 1, will throw error
+				img = imutils.resize(img, width=maxW)
+			else:
+				img = imutils.resize(img, width=maxW, height=1)
 		# otherwise, resize along the height
 		else:
-			img = imutils.resize(img, height=maxH)
+			wCheck = tW/(tH/maxH)
+			if wCheck > 1.00001:#check not < 1, will throw error
+				img = imutils.resize(img, height=maxH)
+			else:
+				img = imutils.resize(img, height=maxH, width=1)
 		return img
 
 	def Preprocess(self, image):
@@ -55,7 +63,7 @@ class FindCharsWords:
 		# Applied dilation
 		kernel3 = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
 		gray = cv2.morphologyEx(gray, cv2.MORPH_ERODE, kernel3)
-		grayS = self.ResizeImage(gray, 800, 800)
+		#grayS = self.ResizeImage(gray, 800, 800)
 		#cv2.imshow("Preprocessed", grayS)
 		#cv2.waitKey(0)
 		return gray
@@ -94,11 +102,17 @@ class FindCharsWords:
 			# nor too large
 			#if (w >= 5 and w <= 150) and (h >= 8 and h <= 120):
 			if (w >= 5 and w <= 375) and (h >= 15 and h <= 300):
+
 				# extract the character and threshold it to make the character
 				# appear as *white* (foreground) on a *black* background, then
 				# grab the width and height of the thresholded image
 				roi = gray[y:y + h, x:x + w]
 				thresh = cv2.threshold(roi, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
+				if i > 153:
+					xxx = 'temp for debugging'
+					#grayS = self.ResizeImage(thresh, 800, 800)
+					#cv2.imshow("Preprocessed", grayS)
+					#cv2.waitKey(0)
 				thresh = self.ResizeImage(thresh, 22, 22) #resize the image
 
 				# re-grab the image dimensions (now that its been resized)
@@ -318,6 +332,9 @@ class FindCharsWords:
 			if type(image) is np.ndarray:  # only process if image file
 				image = self.ResizeImage(image, 2000, 2000)
 				gray = self.Preprocess(image) #preprocess the image, convert to gray
+				#imageS = self.ResizeImage(gray, 800, 800)
+				#cv2.imshow("Keywords Image", imageS)
+				#cv2.waitKey(0)
 				chars, wordList = self.FindCharsWords(gray) #find characters and words, store as [image, (x, y, w, h)]
 				self.RunModel(chars, wordList, gray, image) #run the model to predict characters
 
