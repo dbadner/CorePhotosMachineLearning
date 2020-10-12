@@ -25,8 +25,9 @@ model = load_model(args["model"])
 
 class FindCharsWords:
 
-	InputDir: str #= r'C:\Users\DBadner\Desktop\input'
+	InputDir: str #
 	Model: object #= load_model('number_az_model_firstpass.h5')
+	#CurrentImageName: str #current image name being processed
 
 	def __init__(self, inputdir: str):
 		self.InputDir = inputdir
@@ -155,7 +156,7 @@ class FindCharsWords:
 						ovl = (min(y+h,yC+hC) - max(y,yC)) / (max(y+h,yC+hC) - min(y,yC)) #percentage overlap
 						if ovl > 0.3: #set 30% overlap threshold
 							htRatio = h / hW
-							if htRatio < 2.5 and htRatio > 0.4: #thresholds for height ratios
+							if htRatio < 2.5 and htRatio > 0.3: #thresholds for height ratios
 								if len(word.charList) <= 3 or (len(word.charList) > 2 and (max(xDif,0) - word.avgCharSpac) / hW < .4):
 									#final check - look for a change in average spacing between characters in a word
 									fndWord = True
@@ -213,7 +214,7 @@ class FindCharsWords:
 							break
 		return removeList
 
-	def RunModel(self, chars, wordList, gray, image):
+	def RunModel(self, chars, wordList, gray, image, image_file):
 		#run the model to predict characters
 
 		# function level variables
@@ -225,26 +226,14 @@ class FindCharsWords:
 		probNumList = [] #list corresponding to wordList indices with probability of number
 		wordCharList = [] #list of character arrays in words corresponding to wordList
 		keyWordList = [] #list of char lists defining keywords
-		keyWordList.append(['F','R','O','M'])
-		keyWordList.append(['T','O'])
-		keyWordList.append(['D','R','Y'])
-		keyWordList.append(['W','E','T'])
-		maxProbKeyWordList = [] #maximum probability of current word
-		maxProbKeyWordListInd = [] #corresponding indices
-		keyWordListInd = []
-		#maxProbKeyWordList = np.empty(len(keyWordList), dtype=float)  # list of length len(keyWordList) x 2 containing ID of max probability word for each keyword, and corresponding probability
-		#keyWordListInd = np.empty(len(keyWordList), dtype=list) #corresponding indices for keyWordList, values from 0 to 35
-		for keyWord in keyWordList:
-			keyWordInd = []
-			for char in keyWord:
-				for i in range(len(labelNames)):
-					l = labelNames[i]
-					if l == char:
-						keyWordInd.append(i)
-						break
-			keyWordListInd.append(keyWordInd)
-			maxProbKeyWordList.append(0) #initialize list of max probabilities to 0
-			maxProbKeyWordListInd.append(-1) #initialize index to -1
+		keyWordList.append(KeyWord(['F', 'R', 'O', 'M'], 1, labelNames))
+		keyWordList.append(KeyWord(['T', 'O'], 1, labelNames))
+		keyWordList.append(KeyWord(['D', 'E', 'P', 'T', 'H'], 2, labelNames)) #allow for two depths to be found
+		keyWordList.append(KeyWord(['D', 'R', 'Y'], 1, labelNames))
+		keyWordList.append(KeyWord(['W', 'E', 'T'], 1, labelNames))
+		dryInd = 3
+		wetInd = 4
+
 
 		# extract the bounding box locations and padded characters
 		boxes = [b[1] for b in chars]
@@ -301,8 +290,8 @@ class FindCharsWords:
 				#probNumList.append(-1) #null val
 
 			#check probability of being a keyword
-			for k in range(len(keyWordListInd)):
-				keyWordInd = keyWordListInd[k]
+			for k in keyWordList:
+				keyWordInd = k.CharsInd
 				probKeyWord = 0
 				if len(words.charList) == len(keyWordInd):  # same length, so check probability
 					for i in range(len(keyWordInd)):  # for each ith character
@@ -310,35 +299,54 @@ class FindCharsWords:
 						probKeyWord += preds[ind][keyWordInd[i]] #find probability that ith characters match
 					probKeyWord /= len(keyWordInd)
 					#now compare to list, and replace if the new highest likelihool of word is found
-					if probKeyWord > maxProbKeyWordList[k]: #new highest likelihood found
-						maxProbKeyWordList[k] = probKeyWord
-						maxProbKeyWordListInd[k] = wInd  # corresponding word index
+					for n in range(len(k.MaxProb)):
+						if probKeyWord > k.MaxProb[n]: #new highest likelihood found
+							k.MaxProb[n] = probKeyWord
+							k.MaxProbWordInd[n] = wInd  # corresponding word index
+							break
 		#show image of keyWords picked out, and print probabilities correct
 		imgKeyWords = image.copy()
-		for k in range(len(maxProbKeyWordListInd)):
-			temp: str = ""
-			for c in keyWordList[k]:
-				temp = temp + c
-			temp = temp + ": P={:.1f}%".format(maxProbKeyWordList[k]*100)
-			print(temp)
-			execute = True
-			if maxProbKeyWordList[k] < 0.4: #keyword not found with sufficient probability (40%)
-				execute = False
-			if k == 2 and maxProbKeyWordList[2] < maxProbKeyWordList[3]:#compare probability of dry vs wet, only show the higher probability
-				execute = False
-			elif k == 3 and maxProbKeyWordList[3] < maxProbKeyWordList[2]:
-				execute = False
-			if execute:
-				(x, y, w, h) = wordList[maxProbKeyWordListInd[k]].dims
-				cv2.rectangle(imgKeyWords, (x, y), (x + w, y + h), (0, 255, 0), 2)
-				for i in range(len(keyWordListInd[k])): #characters in keyword
-					label = keyWordList[k][i]
-					charInd = wordList[maxProbKeyWordListInd[k]].charList[i]
-					(xC, yC, wC, hC) = boxes[charInd]
-					cv2.putText(imgKeyWords, label, (xC - 10, yC - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 2)
+		for ii, k in enumerate(keyWordList):
+			for n in range(len(k.MaxProb)):
+				temp: str = ""
+				for c in k.Chars:
+					temp = temp + c
+				temp = temp + ": P={:.1f}%".format(k.MaxProb[n]*100)
+				print(temp)
+				execute = True
+				if k.MaxProb[n] < 0.4: #keyword not found with sufficient probability (40%)
+					execute = False
+				#hardcode for DRY vs WET
+				if ii == dryInd and keyWordList[dryInd].MaxProb[n] < keyWordList[wetInd].MaxProb[n]:#compare probability of dry vs wet, only show the higher probability
+					execute = False
+				elif ii == wetInd and keyWordList[wetInd].MaxProb[n] < keyWordList[dryInd].MaxProb[n]:
+					execute = False
+				if execute:
+					(x, y, w, h) = wordList[k.MaxProbWordInd[n]].dims
+					cv2.rectangle(imgKeyWords, (x, y), (x + w, y + h), (0, 255, 0), 2)
+					for i in range(len(k.Chars)): #characters in keyword
+						label = k.Chars[i]
+						charInd = wordList[k.MaxProbWordInd[n]].charList[i]
+						(xC, yC, wC, hC) = boxes[charInd]
+						cv2.putText(imgKeyWords, label, (xC - 10, yC - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 2)
 		imageS = self.ResizeImage(imgKeyWords, 800, 800)
 		cv2.imshow("Keywords Image", imageS)
 		cv2.waitKey(0)
+		#TEMPORARY - CREATE Training Set
+		valid = False
+		inp: str
+		while not valid:
+			inp = input("Add to training set (y/n): ")
+			inp = inp.upper()
+			if inp == "Y" or inp == "N":
+				valid = True
+		if inp == "Y": #write image to training set folder
+			image_path = self.InputDir + '\\' + image_file
+			imageTemp = cv2.imread(image_path)
+			image_path_out = self.InputDir + '\\trainset\\' + image_file
+			cv2.imwrite(image_path_out, imageTemp)
+
+
 
 	def OCRHandwriting(self):
 		for image_file in os.listdir(self.InputDir):
@@ -352,7 +360,8 @@ class FindCharsWords:
 				#cv2.imshow("Keywords Image", imageS)
 				#cv2.waitKey(0)
 				chars, wordList = self.FindCharsWords(gray) #find characters and words, store as [image, (x, y, w, h)]
-				self.RunModel(chars, wordList, gray, image) #run the model to predict characters
+				self.RunModel(chars, wordList, gray, image, image_file) #run the model to predict characters
+
 
 
 class Word:
@@ -362,18 +371,18 @@ class Word:
 	#def __init__(self):
 		#self.dims = (0,0,0,0)
 
-class keyWord:
-	Chars = [] #list of characters in keyword, caps [0 to n keywords - 1]
-	CharsInd = [] #indices of characters from 0 to 35, [0 to n keywords - 1]
+class KeyWord:
+	Chars: list #list of characters in keyword, caps [0 to n keywords - 1]
+	CharsInd: list #indices of characters from 0 to 35, [0 to n keywords - 1]
 	NInstances: int  #number of instances of keyword to search for, integer
-	MaxProb = ()  #maximum probability of max prob word in wordList matching keyWord, [0 to nInstances - 1]
-	MaxProbWordInd = () #wordList index corresponding to maxProb
+	MaxProb: list  #maximum probability of max prob word in wordList matching keyWord, [0 to nInstances - 1]
+	MaxProbWordInd: list  #wordList index corresponding to maxProb
 
 	def __init__(self, chars: list, nInstances: int, labelNames: list):
 		self.NInstances = nInstances
 		self.Chars = chars
-		self.MaxProb = (0,0)
-		self.MaxProbWordInd = (-1,-1)
+		self.MaxProb = [0.0]*nInstances  #(0 for n in range(nInstances))
+		self.MaxProbWordInd = [-1]*nInstances #(-1 for n in range(nInstances))
 		self.CharsInd = self.assignCharsInd(chars, labelNames)
 
 	def assignCharsInd(self, chars: list, labelNames: list):
