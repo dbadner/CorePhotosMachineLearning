@@ -30,6 +30,8 @@ from keras.layers import Dense
 from keras.layers import Flatten
 from keras.optimizers import SGD
 
+
+
 """
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
@@ -42,7 +44,7 @@ ap.add_argument("-p", "--plot", type=str, default="plot.png",
 args = vars(ap.parse_args())
 """
 
-trainnewmodel = True
+trainnewmodel = False
 
 def define_model2():
     model = Sequential()
@@ -58,7 +60,6 @@ def define_model2():
     opt = SGD(lr=INIT_LR, momentum=0.9)
     model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
     return model
-
 
 # initialize the number of epochs to train for, initial learning rate,
 # and batch size
@@ -116,7 +117,7 @@ if trainnewmodel:
     # fit model
     model.fit(trainX, trainY, epochs=EPOCHS, batch_size=BS, verbose=0) #, class_weight=classWeight)
     # save model
-    model.save('number_az_model.h5')
+    model.save('number_az_model_TEST.h5')
     print("[INFO] training complete.")
 else:
     print("[INFO] loading model...")

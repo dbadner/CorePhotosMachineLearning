@@ -155,8 +155,8 @@ class FindCharsWords:
 						ovl = (min(y+h,yC+hC) - max(y,yC)) / (max(y+h,yC+hC) - min(y,yC)) #percentage overlap
 						if ovl > 0.3: #set 30% overlap threshold
 							htRatio = h / hW
-							if htRatio < 2.5 and htRatio > 0.3: #thresholds for height ratios
-								if len(word.charList) <= 3 or (len(word.charList) > 2 and (max(xDif,0) - word.avgCharSpac) / hW < 0.5):
+							if htRatio < 2.5 and htRatio > 0.4: #thresholds for height ratios
+								if len(word.charList) <= 3 or (len(word.charList) > 2 and (max(xDif,0) - word.avgCharSpac) / hW < .4):
 									#final check - look for a change in average spacing between characters in a word
 									fndWord = True
 									#update wordList parameters
@@ -224,12 +224,12 @@ class FindCharsWords:
 		labelNames = [l for l in labelNames]
 		probNumList = [] #list corresponding to wordList indices with probability of number
 		wordCharList = [] #list of character arrays in words corresponding to wordList
-		keyWordList = [] #list of char lists defining keywords corresponding to wordList
+		keyWordList = [] #list of char lists defining keywords
 		keyWordList.append(['F','R','O','M'])
 		keyWordList.append(['T','O'])
 		keyWordList.append(['D','R','Y'])
 		keyWordList.append(['W','E','T'])
-		maxProbKeyWordList = []
+		maxProbKeyWordList = [] #maximum probability of current word
 		maxProbKeyWordListInd = [] #corresponding indices
 		keyWordListInd = []
 		#maxProbKeyWordList = np.empty(len(keyWordList), dtype=float)  # list of length len(keyWordList) x 2 containing ID of max probability word for each keyword, and corresponding probability
@@ -361,5 +361,29 @@ class Word:
 	avgCharSpac: int = 0 #initialize average character spacing to -1
 	#def __init__(self):
 		#self.dims = (0,0,0,0)
+
+class keyWord:
+	Chars = [] #list of characters in keyword, caps [0 to n keywords - 1]
+	CharsInd = [] #indices of characters from 0 to 35, [0 to n keywords - 1]
+	NInstances: int  #number of instances of keyword to search for, integer
+	MaxProb = ()  #maximum probability of max prob word in wordList matching keyWord, [0 to nInstances - 1]
+	MaxProbWordInd = () #wordList index corresponding to maxProb
+
+	def __init__(self, chars: list, nInstances: int, labelNames: list):
+		self.NInstances = nInstances
+		self.Chars = chars
+		self.MaxProb = (0,0)
+		self.MaxProbWordInd = (-1,-1)
+		self.CharsInd = self.assignCharsInd(chars, labelNames)
+
+	def assignCharsInd(self, chars: list, labelNames: list):
+		keyWordInd = []
+		for char in chars:
+			for i in range(len(labelNames)):
+				l = labelNames[i]
+				if l == char:
+					keyWordInd.append(i)
+					break
+		return keyWordInd
 
 
