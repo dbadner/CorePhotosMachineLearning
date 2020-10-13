@@ -8,6 +8,8 @@ import argparse
 import imutils
 import cv2
 import os
+import h5py
+import csv
 
 """
 # construct the argument parser and parse the arguments
@@ -368,9 +370,9 @@ class FindCharsWords:
 		cv2.imshow("Keywords Image", imageS)
 		cv2.waitKey(0)
 
-		# build and scale feature matrix for words in current image
-		(tH, tW) = gray.shape
-		data = self.BuildFeatureMatrix(True, wordList, keyWordList, charList, tH, tW, imgKeyWords)
+
+
+
 
 		# TEMPORARY - CREATE Training Set
 		valid = False
@@ -387,6 +389,13 @@ class FindCharsWords:
 			cv2.imwrite(image_path_out, imageTemp)
 		# label data
 		# write labelled data to file
+
+		if inp== "Y":
+			# build and scale feature matrix for words in current image, store in dataList and labelList
+			(tH, tW) = gray.shape
+			dataList, labelList = self.BuildFeatureMatrix(True, wordList, keyWordList, charList, tH, tW, imgKeyWords)
+			#self.SaveUpdateTrainingSet(r'input/depth_train_dataset.hdf5', image_file, dataList, labelList)
+			self.SaveUpdateTrainingSetCSV('depth_train_dataset.csv', image_file, dataList, labelList)
 
 	def BuildFeatureMatrix(self, labeldata: bool, wordList: list, keyWordList: list, charList: list, tH, tW, image):
 		# built feature matrix
@@ -438,13 +447,14 @@ class FindCharsWords:
 				inputval: int = 0
 				while not valid:
 					inp = input("Depth value (enter 1) or not (enter 0):")
+					if inp == "": inp = "0"
 					if inp == "1" or inp == "0":
 						valid = True
 						inputval = int(inp)
 				labels.append(inputval)
 
 
-		return data
+		return data, labels
 
 	def FindClosestKeyword(self, word, wordList, keyWordList, tH, tW):
 		# finds and returns x and y distance to closest keyword
@@ -491,6 +501,94 @@ class FindCharsWords:
 			fndPunct = True
 			break
 		return fndPunct
+
+	def SaveUpdateTrainingSetCSV(self, fname, imagefile, dataList, labelList):
+		# function checks if an existing training set exists, and builds a new one if not
+		# structure of CSV:
+		# row 0 = labels
+		# rows 1 - 5 = data
+		# row 6 = image file name
+		# check if file exists:
+		exists = os.path.exists(fname)
+		writemode = 'w'
+		if exists: writemode = 'a'
+		#filewriter: object
+		#nrows: int
+		#fil: object
+		#if exists:
+		#with open(fname, writemode) as csvfile: #redo the header everytime
+		#	filewriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL, lineterminator = '\n')
+		#	filewriter.writerow(['labels', 'data1', 'data2', 'data3', 'data4', 'data5', 'filename'])
+		#else: #file doesn't exist so create it
+		with open(fname, writemode) as csvfile:
+			filewriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL, lineterminator = '\n')
+			if not exists:
+				filewriter.writerow(["labels", "y_dist", "x_dist", "prob_numb", "punct", "num_chars", "filename"]) #header row first
+			for dataLine, labelLine in zip(dataList, labelList):
+				outputlist = []
+				outputlist.append(str(labelLine))
+				for a in dataLine:
+					outputlist.append(str(a))
+				outputlist.append(imagefile) #image file name
+				filewriter.writerow(outputlist)
+		#fil = csv.open(fname, mode='w')
+		#fil.writer
+		#if exists:
+
+		#else:
+			#fil =
+
+			#start writing below last existing line
+		#for dataLine, labelLine in zip(dataList, labelList):
+			#xxx = 1
+
+	def SaveUpdateTrainingSet(self, fname, imagefile, dataList, labelList):
+		#FUNCTION NOT WORKING, not currently used
+		#function checks if an existing training set exists, and builds a new one if not
+		#check if file exists
+		exists = os.path.exists(fname)
+		dataAll: list  # = []
+		labalAll: list  # = []
+		f: h5py.File
+		if exists:
+			f = h5py.File(fname, 'r+')
+			try:
+				dataRead = f['data'][:]
+				labelRead = f['labels'][:]
+				dataAll = list(dataRead)
+				labelAll = list(labelRead)
+			except:
+				xxx = 1
+		else: #create new file
+			f = h5py.File(fname, 'w')
+
+		#blnRead: bool
+		#try: #read all the data in
+
+			#blnRead = True
+		#except:#file does not exist
+			#blnRead = False
+		#if blnRead:
+			#dataAll = list(dataRead)
+			#labelAll = list(labelRead)
+			#for dataLine in dataRead:
+				#dataAll.append(dataLine)
+			#for labalLine in labelRead:
+				#labelAll.append(labelsRead)
+		dataAll2 = np.array(dataList, dtype="float32")
+		labelAll2 = np.array(labelList, dtype="int")
+		f.create_dataset('data', data=dataAll2)
+		f.create_dataset('labels', data=labelAll2)
+
+		f.close()
+
+
+
+
+
+
+
+
 
 
 	def OCRHandwriting(self):

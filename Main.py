@@ -12,7 +12,11 @@ outputdir = r'inputimages\output'
 #objWB = wb.FindWhiteBoards(inputdir, outputdir)
 #wbextents: dict = objWB.RunModel(True, False)
 
+
+
 objHW = hw.FindCharsWords(outputdir)
+#TEMP:
+#objHW.SaveUpdateTrainingSet(r'input/depth_train_dataset.hdf5', 'a', [.5, .5, .5, .4, .5 ], [1, 0])
 objHW.OCRHandwriting()
 
 #objTessWB = tesswb.TessFindWords(inputdir)
