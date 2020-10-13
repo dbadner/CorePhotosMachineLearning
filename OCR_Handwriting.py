@@ -24,10 +24,15 @@ model = load_model(args["model"])
 """
 
 class FindCharsWords:
+	#declare class variables
+	InputDir: str # image input directory
+	Model: object # input neural network model
 
-	InputDir: str #
-	Model: object #= load_model('number_az_model_firstpass.h5')
-	#CurrentImageName: str #current image name being processed
+	CharList: list #list of Character class objects found in image by neural network
+	WordList: list #list of Word class objects comprising 2 or more characters nearby
+	ProbNumList: list  # list corresponding to wordList indices with probability of number
+	WordCharList: list  # list of character arrays in words corresponding to wordList
+	KeyWordList: list  # list of char lists defining keywords
 
 	def __init__(self, inputdir: str):
 		self.InputDir = inputdir
@@ -87,14 +92,14 @@ class FindCharsWords:
 		# characters that we'll be OCR'ing
 		# chars = []  # pairs of character images and dimensions
 		# loop over the contours and populate if they pass the criteria
-		chars = self.ProcessChars(gray, cnts)
-		return chars
+		charList = self.ProcessChars(gray, cnts)
+		return charList
 
 	def ProcessChars(self, gray, cnt):
 		# function takes in image and contour and filters the characters to those within words,
 		# and those with appropriate sizes, and adjusts white space
-		chars = []  # pairs of character images and dimensions
-		charDict = {} #charID, ndarray[28x28x1] image, (x,y,w,h) of original image
+		charList = []  # pairs of character images and dimensions
+		#charDict = {} #charID, ndarray[28x28x1] image, (x,y,w,h) of original image
 		for i in range(len(cnt)):
 			c = cnt[i]
 			# compute the bounding box of the contour
@@ -102,7 +107,7 @@ class FindCharsWords:
 			# filter out bounding boxes, ensuring they are neither too small
 			# nor too large
 			#if (w >= 5 and w <= 150) and (h >= 8 and h <= 120):
-			if (w >= 5 and w <= 375) and (h >= 15 and h <= 300):
+			if (w >= 5 and w <= 375) and (h >= 5 and h <= 300) and w/h < 22 and h/w < 22:
 
 				# extract the character and threshold it to make the character
 				# appear as *white* (foreground) on a *black* background, then
@@ -128,79 +133,104 @@ class FindCharsWords:
 				# handwriting OCR model
 				padded = padded.astype("float32") / 255.0
 				padded = np.expand_dims(padded, axis=-1)
-				chars.append((padded, (x, y, w, h)))  # update our list of characters that will be OCR'd
+				#check if small character, unlikely text (could be punctuation):
+				smallCharFilt = False
+				if h < 20:
+					smallCharFilt = True
+				charList.append(Character(padded, (x, y, w, h), False, smallCharFilt), False)  # update our list of characters that will be OCR'd
 				#charDict[i] = (padded, (x, y, w, h))
 
 		# check each character to make sure not overlapping with an another character, discard if so
 		#removeList = []
-		removeList = self.CheckOverlap(chars)
-		for i in range(len(removeList)-1,-1,-1):
-			del chars[removeList[i]]
+		removeList = self.CheckOverlap(charList)
+		for i in removeList:
+			charList[i].OvlFilt = True
+		#for i in range(len(removeList)-1,-1,-1):
+			#del chars[removeList[i]]
 
 		wordList = []
-		#now loop through chars and assign to words
-		for i in range(len(chars)):
-			char = chars[i]
-			(x, y, w, h) = char[1] #read in character dimensions
-			#charDict[i] = char #store in dictionary
-			fndWord = False
-			for j in range(len(wordList)): #loop through existing word list
-				word = wordList[j]
-				(xW, yW, wW, hW) = word.dims #read in word dimensions
-				(xC, yC, wC, hC) = chars[word.charList[len(word.charList)-1]][1] #read in last character dimensions in word
-				#compare to determine whether character is part of current word
-				xDif = x - (xW+wW) #check x
-				if xDif < hW/1.3: #compare to word height to check if close enough to word to be included (i.e. whitespace between)
-					#check y-overlap against previous character in word (instead of fill word
-					if not(y > (yC + hC) or (y + h) < yC):#need to also check amount of overlap
-						ovl = (min(y+h,yC+hC) - max(y,yC)) / (max(y+h,yC+hC) - min(y,yC)) #percentage overlap
-						if ovl > 0.3: #set 30% overlap threshold
-							htRatio = h / hW
-							if htRatio < 2.5 and htRatio > 0.3: #thresholds for height ratios
-								if len(word.charList) <= 3 or (len(word.charList) > 2 and (max(xDif,0) - word.avgCharSpac) / hW < .4):
-									#final check - look for a change in average spacing between characters in a word
-									fndWord = True
-									#update wordList parameters
-									yWN = min(y,yW)
-									hWN = max(y+h, yW+hW) - yWN
-									wWN = x + w - xW
-									word.charList.append(i)
-									word.dims = (xW, yWN, wWN, hWN)
-									#assign avg word spacing
-									word.avgCharSpac = (word.avgCharSpac + max(xDif,0)) / (len(word.charList) - 1)
-									#wordList[j] = word
-									#word[0] = (xW, yWN, wWN, hWN)
-									#wordList[j] = (((xW, yWN, wWN, hWN), word[1]))
-									break  # exit for loop
-								#else:
-									#xxx = 1
-			if not(fndWord): #start a new word
-				newWord = Word()
-				newWord.dims = char[1]
-				newWord.charList = [i]
-				wordList.append(newWord)
-				#wordList.append((char[1],[i])) #add dimensions of first character and charID to the wordlist
+		#now loop through chars and perform checks, assign to words
+		for i, char in enumerate(charList):
+			if not char.OvlFilt:
+				fndWord = False
+				(x, y, w, h) = char.Dims #read in character dimensions
+				for j, word in enumerate(wordList): #loop through existing word list
+					prevChar = charList[word.charList[len(word.charList) - 1]]  # read in previous character in word
+					fndWord = self.CharChecks(i, char, prevChar, j, word)
+					if fndWord:
+						(xW, yW, wW, hW) = word.dims #read in word dimensions
+						#update wordList parameters
+						yWN = min(y,yW)
+						hWN = max(y+h, yW+hW) - yWN
+						wWN = x + w - xW
+						word.charList.append(i)
+						word.dims = (xW, yWN, wWN, hWN)
+						#assign avg word spacing
+						if len(word.charList) > 2:
+							xxx = 1
+						word.avgCharSpac = (word.avgCharSpac * (len(word.charList) - 2) + max(x - (xW + wW),0)) / (len(word.charList) - 1)
+						word.avgCharH = (word.avgCharH * (len(word.charList) - 1) + h) / len(word.charList)
+						word.avgCharW = (word.avgCharW * (len(word.charList) - 1) + w) / len(word.charList)
+						char.InWord = True
+						break  # exit for loop
+				if not(fndWord): #start a new word
+					newWord = Word()
+					newWord.dims = char.Dims
+					newWord.charList = [i]
+					wordList.append(newWord)
+					char.InWord = True
+					#wordList.append((char[1],[i])) #add dimensions of first character and charID to the wordlist
+
 		# final loop to throw out words that only have one character
 		for i in range(len(wordList)-1,-1,-1):
 			words = wordList[i]
 			if len(words.charList) < 2:
+				charList[words.charList[0]].InWord = False #change back to false, no longer in a word
 				del wordList[i]
+			#else:#check for overlapping characters and remove from word if so
+				#removeList = self.CheckOverlap(chars)
+				#for i in range(len(removeList) - 1, -1, -1):
+					#del chars[removeList[i]]
 
-		return chars, wordList
+		return charList, wordList
 
-	def CheckOverlap(self, chars):
+	def CharChecks(self, i, char, prevChar, j, word):
+		#function runs a series of checks to check whether character 'char' is in word 'word', returns true is so, or false if not
+		(x, y, w, h) = char.Dims  # read in character dimensions
+		(xW, yW, wW, hW) = word.dims  # read in word dimensions
+		(xC, yC, wC, hC) = prevChar.Dims  # read in last character dimensions in word
+		# compare to determine whether character is part of current word
+		xDif = x - (xW + wW)  # check x
+		if xDif >= hW / 1.3:  # compare to word height to check if close enough to word to be included (i.e. whitespace between)
+			return False
+		# check y-overlap against previous character in word (instead of fill word
+		if y > (yC + hC) or (y + h) < yC:  # need to also check amount of overlap
+			return False
+		ovl = (min(y + h, yC + hC) - max(y, yC)) / (max(y + h, yC + hC) - min(y, yC))  # percentage overlap
+		if ovl <= 0.3:  # set 30% overlap threshold
+			return False
+		htRatio = h / hW
+		if htRatio > 2.5 or htRatio < 0.3:  # thresholds for height ratios
+			return False
+		if not(len(word.charList) <= 3 or (len(word.charList) > 2 and (max(xDif, 0) - word.avgCharSpac) / hW < .4)):
+			return False
+			# final check - look for a change in average spacing between characters in a word
+		else:
+			return True
+
+	def CheckOverlap(self, charList):
 		# check each character to make sure not overlapping with an another character
 		#chars [ndarray[28x28x1], (x,y,w,h)] - list of characters
 		removeList = []
-		for i in range(len(chars)):
-			charI = chars[i]
-			(x, y, w, h) = charI[1]  # read in character dimensions
+		for i, charI in enumerate(charList):
+			#charI = chars[i]
+			(x, y, w, h) = charI.Dims  # read in character dimensions
 			discard: bool = False
-			for j in range(len(chars)):
+			for j, charJ in enumerate(charList):
 				if j == i:
 					continue
-				charJ = chars[j]
-				(xC, yC, wC, hC) = charJ[1]  # read in character dimensions
+				#charJ = chars[j]
+				(xC, yC, wC, hC) = charJ.Dims  # read in character dimensions
 				#xFuz = wC * 0.1 #if over 60% overlap in x and y then remove
 				#yFuz = hC * 0.1
 				if w * h <= wC * hC:  # only discard the smaller of the two
@@ -214,7 +244,7 @@ class FindCharsWords:
 							break
 		return removeList
 
-	def RunModel(self, chars, wordList, gray, image, image_file):
+	def RunModel(self, charList, wordList, gray, image, image_file):
 		#run the model to predict characters
 
 		# function level variables
@@ -236,14 +266,16 @@ class FindCharsWords:
 
 
 		# extract the bounding box locations and padded characters
-		boxes = [b[1] for b in chars]
-		chars = np.array([c[0] for c in chars], dtype="float32")
+		#boxes = [b[1] for b in chars]
+		#chars = np.array([c[0] for c in chars], dtype="float32")
+		boxes = [b.Dims for b in charList]
+		imageData = np.array([c.Data for c in charList], dtype="float32")
 		# OCR the characters using our handwriting recognition model
-		preds = self.Model.predict(chars)
+		preds = self.Model.predict(imageData)
 
 
 		# loop over the predictions and bounding box locations together
-		for (pred, (x, y, w, h)) in zip(preds, boxes):
+		for n, (pred, (x, y, w, h)) in enumerate(zip(preds, boxes)):
 			# for (x, y, w, h) in boxes:
 			# find the index of the label with the largest corresponding
 			# probability, then extract the probability and label
@@ -253,10 +285,10 @@ class FindCharsWords:
 			# draw the prediction on the image
 			#print("[INFO] {} - {:.2f}%".format(label, prob * 100))
 			cv2.rectangle(imgAnno, (x, y), (x + w, y + h), (0, 255, 0), 2)
-			cv2.putText(imgAnno, label, (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 2)
-		# loop over words
-		for wInd in range(len(wordList)):
-			words = wordList[wInd]
+			if charList[n].OvlFilt == False and charList[n].SmallFilt == False: #only add text to the image if filter out flag is false
+				cv2.putText(imgAnno, label, (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 2)
+		# loop over words, draw rectangle around
+		for wInd, words in enumerate(wordList):
 			#if len(words[1]) > 1: #show wordBoxes if > 1 character
 			(x, y, w, h) = words.dims
 			cv2.rectangle(imgAnno, (x, y), (x + w, y + h), (255, 51, 204), 2) #rectangle around word
@@ -280,14 +312,10 @@ class FindCharsWords:
 					probNum += prob[j]
 				#probNum /= 10
 				wordChars.append(labelNames[np.argmax(preds[i])]) #store the max likelihood character in wordCharList
-				# loop through keywords
-
 
 			probNum /= len(words.charList)
 			probNumList.append(probNum)
 			wordCharList.append(wordChars)
-			#else: #length of word = 1
-				#probNumList.append(-1) #null val
 
 			#check probability of being a keyword
 			for k in keyWordList:
@@ -332,6 +360,10 @@ class FindCharsWords:
 		imageS = self.ResizeImage(imgKeyWords, 800, 800)
 		cv2.imshow("Keywords Image", imageS)
 		cv2.waitKey(0)
+
+		# build and scale feature vector
+		featVec: np.array = self.BuiltFeatureVec()
+
 		#TEMPORARY - CREATE Training Set
 		valid = False
 		inp: str
@@ -345,6 +377,20 @@ class FindCharsWords:
 			imageTemp = cv2.imread(image_path)
 			image_path_out = self.InputDir + '\\trainset\\' + image_file
 			cv2.imwrite(image_path_out, imageTemp)
+			#label data
+			#write labelled data to file
+
+
+	def BuiltFeatureVec(self):
+		#built feature vector
+		#features:
+		#y_dist - y distance from nearest keyword, scaled to [-1,1] by bounds of whiteboard image
+		#x_dist - x distance from nearest keyword, scaled to [-1,1] by bounds of whiteboard image
+		#p_numb - average likelihood that characters in word are numeric [0,1]
+		#contains_punct - whether or not the word contains a '.' punctuation character, [0=False,1=True]
+		#num_chars - number of characters, [0,1], 1 if 3-6 characters, 0 otherwise
+		featVec: np.array()
+
 
 
 
@@ -359,17 +405,31 @@ class FindCharsWords:
 				#imageS = self.ResizeImage(gray, 800, 800)
 				#cv2.imshow("Keywords Image", imageS)
 				#cv2.waitKey(0)
-				chars, wordList = self.FindCharsWords(gray) #find characters and words, store as [image, (x, y, w, h)]
-				self.RunModel(chars, wordList, gray, image, image_file) #run the model to predict characters
-
-
+				charList, wordList = self.FindCharsWords(gray) #find characters and words, store as [image, (x, y, w, h)]
+				self.RunModel(charList, wordList, gray, image, image_file) #run the model to predict characters
 
 class Word:
-	dims = (0,0,0,0)  #= np.zeros(4, dtype=int) #x,y,w,h
+	dims: tuple #= (0, 0, 0, 0)  #= np.zeros(4, dtype=int) #x,y,w,h
 	charList = [] #list of character indices
-	avgCharSpac: int = 0 #initialize average character spacing to -1
+	avgCharSpac: float = 0 #initialize average character spacing to -1
+	avgCharW: float = 0
+	avgCharH: float = 0
 	#def __init__(self):
 		#self.dims = (0,0,0,0)
+
+class Character:
+	Data: np.zeros(shape=(28, 28, 1)) #b&W shade data, 28x28 size image
+	Dims: tuple #x,y,w,h
+	OvlFilt = False #true flags overlapping characters to exclude from certain operations
+	SmallFilt = False
+	InWord = False #true if assigned to a word, false if not
+
+	def __init__(self, data: np.array, dims: tuple, ovlfilt: bool, smallfilt: bool, inword: bool):
+		self.Data = data
+		self.Dims = dims
+		self.OvlFilt = ovlfilt
+		self.SmallFilt = smallfilt
+		self.InWord = inword
 
 class KeyWord:
 	Chars: list #list of characters in keyword, caps [0 to n keywords - 1]
