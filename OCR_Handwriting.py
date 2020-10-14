@@ -142,7 +142,7 @@ class FindCharsWords:
 				padded = np.expand_dims(padded, axis=-1)
 				# check if small character, unlikely text (could be punctuation):
 				smallCharFilt = False
-				if h < 20:
+				if h < 22:
 					smallCharFilt = True
 				charList.append(Character(padded, (x, y, w, h), False, smallCharFilt,
 										  False))  # update our list of characters that will be OCR'd
@@ -210,7 +210,7 @@ class FindCharsWords:
 		(xC, yC, wC, hC) = prevChar.Dims  # read in last character dimensions in word
 		# compare to determine whether character is part of current word
 		xDif = x - (xW + wW)  # check x
-		if xDif >= hW / 1.3:  # compare to word height to check if close enough to word to be included (i.e. whitespace between)
+		if xDif >= hW/1.2:  # compare to word height to check if close enough to word to be included (i.e. whitespace between)
 			return False
 		# check y-overlap against previous character in word (instead of fill word
 		if y > (yC + hC) or (y + h) < yC:  # need to also check amount of overlap
@@ -222,6 +222,7 @@ class FindCharsWords:
 		if htRatio > 2.5 or htRatio < 0.3:  # thresholds for height ratios
 			return False
 		if not (len(word.charList) <= 3 or (len(word.charList) > 2 and (max(xDif, 0) - word.avgCharSpac) / hW < .4)):
+			#check space between characters relative to mean space
 			return False
 		# final check - look for a change in average spacing between characters in a word
 		else:
@@ -270,6 +271,7 @@ class FindCharsWords:
 		keyWordList.append(KeyWord(['W', 'E', 'T'], 1, self.LabelNames))
 		dryInd = 3
 		wetInd = 4
+		keywordProbMin = 0.4 #if < 40% then ignore
 
 		# extract the bounding box locations and padded characters
 		# boxes = [b[1] for b in chars]
@@ -350,7 +352,7 @@ class FindCharsWords:
 				temp = temp + ": P={:.1f}%".format(k.MaxProb[n] * 100)
 				print(temp)
 				execute = True
-				if k.MaxProb[n] < 0.4:  # keyword not found with sufficient probability (40%)
+				if k.MaxProb[n] < keywordProbMin:  # keyword not found with sufficient probability (40%)
 					execute = False
 				# hardcode for DRY vs WET
 				if ii == dryInd and keyWordList[dryInd].MaxProb[n] < keyWordList[wetInd].MaxProb[
@@ -370,15 +372,12 @@ class FindCharsWords:
 		cv2.imshow("Keywords Image", imageS)
 		cv2.waitKey(0)
 
-
-
-
-
-		# TEMPORARY - CREATE Training Set
+		# TEMPORARY - CREATE Training Set by saving photos to folders
 		valid = False
 		inp: str
 		while not valid:
-			inp = input("Add to training set (y/n): ")
+			inp = input("Save photo to temporary directory for training set (y/n): ")
+			if inp == "": inp = "Y"
 			inp = inp.upper()
 			if inp == "Y" or inp == "N":
 				valid = True
@@ -390,32 +389,39 @@ class FindCharsWords:
 		# label data
 		# write labelled data to file
 
-		if inp== "Y":
+		#if inp == "Y":
 			# build and scale feature matrix for words in current image, store in dataList and labelList
 			(tH, tW) = gray.shape
-			dataList, labelList = self.BuildFeatureMatrix(True, wordList, keyWordList, charList, tH, tW, imgKeyWords)
+			dataList, labelList = self.BuildFeatureMatrix(True, wordList, keyWordList, charList, tH, tW, imgKeyWords, keywordProbMin)
 			#self.SaveUpdateTrainingSet(r'input/depth_train_dataset.hdf5', image_file, dataList, labelList)
 			self.SaveUpdateTrainingSetCSV('depth_train_dataset.csv', image_file, dataList, labelList)
 
-	def BuildFeatureMatrix(self, labeldata: bool, wordList: list, keyWordList: list, charList: list, tH, tW, image):
+	def BuildFeatureMatrix(self, labeldata: bool, wordList: list, keyWordList: list, charList: list, tH, tW, image, keywordProbMin):
 		# built feature matrix
 		#parameters:
 		#labeldata: True if interactive user labelling data
 		# features:
-		# y_dist - y distance from nearest keyword, scaled to [-1,1] by bounds of whiteboard image
 		# x_dist - x distance from nearest keyword, scaled to [-1,1] by bounds of whiteboard image
+		# y_dist - y distance from nearest keyword, scaled to [-1,1] by bounds of whiteboard image
 		# p_numb - average likelihood that characters in word are numeric [0,1]
 		# punct - whether or not the word contains a '.' punctuation character, [0=False,1=True]
 		# num_chars - #number of characters scaled ###number of characters, [0,1], 1 if 3-6 characters, 0 otherwise
-		featnames = ["y_dist", "x_dist", "prob_numb", "punct", "num_chars"]
+		featnames = ["x_dist", "y_dist", "prob_numb", "punct", "num_chars"]
 		n_feat = 5
 		data = [] #np.zeros(len(wordList), n_feat)
 		labels = [] #1 for depth value word, 0 for not
 		# obtain feature vector for each word
 		for n, word in enumerate(wordList):
 
+			#img = image.copy()
+			#(x, y, w, h) = word.dims
+			#cv2.rectangle(img, (x, y), (x + w, y + h), (0, 176, 240), 2)
+			#imageS = self.ResizeImage(img, 800, 800)
+			#cv2.imshow("Keywords Image", imageS)
+			#cv2.waitKey(0)
+
 			#ex_param = np.zeros(1, n_feat)
-			x_dist, y_dist = self.FindClosestKeyword(word, wordList, keyWordList, tH, tW)
+			x_dist, y_dist = self.FindClosestKeyword(word, wordList, keyWordList, tH, tW, keywordProbMin)
 			p_numb = word.probNum
 			punct = float(self.FindPunctuation(word, charList))
 			num_chars: float = len(word.charList) / 10 #scale / 10, assume 10 is max reasonable # of characters
@@ -456,21 +462,22 @@ class FindCharsWords:
 
 		return data, labels
 
-	def FindClosestKeyword(self, word, wordList, keyWordList, tH, tW):
+	def FindClosestKeyword(self, word, wordList, keyWordList, tH, tW, keywordProbMin):
 		# finds and returns x and y distance to closest keyword
 		# searching keywords index 0 - 2
 		(x, y, w, h) = word.dims
-		xc = (x + w) / 2
-		yc = (y + h) / 2
+		xc = x + w / 2
+		yc = y + h / 2
 		xMinDif: float = tW  # minimum x and y difference between word center and keyword center, initialize to image dimensions
 		yMinDif: float = tH
 		hMinDif: float = tW**2 + tH**2 #minimum hypoteneuse
 		for k, keyWord in enumerate(keyWordList):
 			if k >= 3: break  # exit loop if past 'depth', hardcoded
-			for n in keyWord.MaxProbWordInd:
+			for n, p in zip(keyWord.MaxProbWordInd, keyWord.MaxProb):
+				if p < keywordProbMin: continue #ignore keyword if < min cutoff, currently 40%
 				(xK, yK, wK, hK) = wordList[n].dims
-				xcK = (xK + wK) / 2
-				ycK = (yK + hK) / 2
+				xcK = xK + wK / 2
+				ycK = yK + hK / 2
 				xdif = xc - xcK
 				ydif = yc - ycK
 				hdif = xdif**2 + ydif**2
@@ -496,7 +503,7 @@ class FindCharsWords:
 			# check within lower half of word, expanded downward by 1/3 of word height
 			if x < xW + (wW*0.1) or x > xW + wW - (wW*0.1): #search middle 80% of word for punctuation
 				continue #not within x
-			if y < yW + hW/2 or y > yW + hW + hW/3:
+			if y < yW + hW/2 or y > yW + hW + hW/4:
 				continue #not within reasonable y
 			fndPunct = True
 			break
@@ -512,18 +519,10 @@ class FindCharsWords:
 		exists = os.path.exists(fname)
 		writemode = 'w'
 		if exists: writemode = 'a'
-		#filewriter: object
-		#nrows: int
-		#fil: object
-		#if exists:
-		#with open(fname, writemode) as csvfile: #redo the header everytime
-		#	filewriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL, lineterminator = '\n')
-		#	filewriter.writerow(['labels', 'data1', 'data2', 'data3', 'data4', 'data5', 'filename'])
-		#else: #file doesn't exist so create it
 		with open(fname, writemode) as csvfile:
 			filewriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL, lineterminator = '\n')
 			if not exists:
-				filewriter.writerow(["labels", "y_dist", "x_dist", "prob_numb", "punct", "num_chars", "filename"]) #header row first
+				filewriter.writerow(["labels", "x_dist", "y_dist", "prob_numb", "punct", "num_chars", "filename"]) #header row first
 			for dataLine, labelLine in zip(dataList, labelList):
 				outputlist = []
 				outputlist.append(str(labelLine))
@@ -531,16 +530,7 @@ class FindCharsWords:
 					outputlist.append(str(a))
 				outputlist.append(imagefile) #image file name
 				filewriter.writerow(outputlist)
-		#fil = csv.open(fname, mode='w')
-		#fil.writer
-		#if exists:
 
-		#else:
-			#fil =
-
-			#start writing below last existing line
-		#for dataLine, labelLine in zip(dataList, labelList):
-			#xxx = 1
 
 	def SaveUpdateTrainingSet(self, fname, imagefile, dataList, labelList):
 		#FUNCTION NOT WORKING, not currently used
@@ -581,14 +571,6 @@ class FindCharsWords:
 		f.create_dataset('labels', data=labelAll2)
 
 		f.close()
-
-
-
-
-
-
-
-
 
 
 	def OCRHandwriting(self):
