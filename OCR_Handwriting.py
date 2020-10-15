@@ -3,6 +3,7 @@
 # import the necessary packages
 from tensorflow.keras.models import load_model
 from imutils.contours import sort_contours
+from pickle import load
 import numpy as np
 import argparse
 import imutils
@@ -355,8 +356,8 @@ class FindCharsWords:
 				if k.MaxProb[n] < keywordProbMin:  # keyword not found with sufficient probability (40%)
 					execute = False
 				# hardcode for DRY vs WET
-				if ii == dryInd and keyWordList[dryInd].MaxProb[n] < keyWordList[wetInd].MaxProb[
-					n]:  # compare probability of dry vs wet, only show the higher probability
+				if ii == dryInd and keyWordList[dryInd].MaxProb[n] < keyWordList[wetInd].MaxProb[n]:
+					# compare probability of dry vs wet, only show the higher probability
 					execute = False
 				elif ii == wetInd and keyWordList[wetInd].MaxProb[n] < keyWordList[dryInd].MaxProb[n]:
 					execute = False
@@ -375,8 +376,10 @@ class FindCharsWords:
 		# TEMPORARY - CREATE Training Set by saving photos to folders
 		valid = False
 		inp: str
+		dataList = []
+		labelList = []
 		while not valid:
-			inp = input("Save photo to temporary directory for training set (y/n): ")
+			inp = input("Add to training set? (y/n): ")
 			if inp == "": inp = "Y"
 			inp = inp.upper()
 			if inp == "Y" or inp == "N":
@@ -395,6 +398,16 @@ class FindCharsWords:
 			dataList, labelList = self.BuildFeatureMatrix(True, wordList, keyWordList, charList, tH, tW, imgKeyWords, keywordProbMin)
 			#self.SaveUpdateTrainingSet(r'input/depth_train_dataset.hdf5', image_file, dataList, labelList)
 			self.SaveUpdateTrainingSetCSV('depth_train_dataset.csv', image_file, dataList, labelList)
+		else: #input = "N"
+			(tH, tW) = gray.shape
+			dataList, labelList = self.BuildFeatureMatrix(False, wordList, keyWordList, charList, tH, tW, imgKeyWords,
+														  keywordProbMin)
+		y_result = self.RunWordNumSVMModel(dataList)
+		for word, y in zip(wordList, y_result):
+			output = "".join(word.wordCharList)
+			output += ": {:.2f}".format(y)
+			print(output)
+
 
 	def BuildFeatureMatrix(self, labeldata: bool, wordList: list, keyWordList: list, charList: list, tH, tW, image, keywordProbMin):
 		# built feature matrix
@@ -409,7 +422,7 @@ class FindCharsWords:
 		featnames = ["x_dist", "y_dist", "prob_numb", "punct", "num_chars"]
 		n_feat = 5
 		data = [] #np.zeros(len(wordList), n_feat)
-		labels = [] #1 for depth value word, 0 for not
+		labels = [] #1 for depth value word, 0 for not. only relevant if labeldata = true, otherwise blank
 		# obtain feature vector for each word
 		for n, word in enumerate(wordList):
 
@@ -531,6 +544,22 @@ class FindCharsWords:
 				outputlist.append(imagefile) #image file name
 				filewriter.writerow(outputlist)
 
+	def RunWordNumSVMModel(self, dataList):
+		#function runs the SVM on the word dataset to classify if word is a number (1) or not (0)
+
+		# load the model
+		model = load(open('word_number_model.pkl', 'rb'))
+		# load the scaler
+		scaler = load(open('word_number_scaler.pkl', 'rb'))
+
+		#scale the data using saved scaler
+		data = np.array(dataList, dtype="float32")
+		data = scaler.transform(data)
+
+		yval = model.predict(data) #1 if number, 0 if not
+		yval2 = model.predit()
+
+		return yval
 
 	def SaveUpdateTrainingSet(self, fname, imagefile, dataList, labelList):
 		#FUNCTION NOT WORKING, not currently used

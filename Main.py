@@ -10,8 +10,8 @@ inputdir = r'inputimages'
 outputdir = r'inputimages\output'
 
 
-objWB = wb.FindWhiteBoards(inputdir, outputdir)
-wbextents: dict = objWB.RunModel(True, False)
+#objWB = wb.FindWhiteBoards(inputdir, outputdir)
+#wbextents: dict = objWB.RunModel(True, False)
 
 
 objHW = hw.FindCharsWords(outputdir)

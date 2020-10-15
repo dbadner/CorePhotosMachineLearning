@@ -44,7 +44,9 @@ ap.add_argument("-p", "--plot", type=str, default="plot.png",
 args = vars(ap.parse_args())
 """
 
-trainnewmodel = False
+###SET THIS PARAMETER TO TRUE TO TRAIN NEW DATA
+trainnewmodel = True
+modelname = 'number_az_model_weighted.h5'
 
 def define_model2():
     model = Sequential()
@@ -115,9 +117,9 @@ if trainnewmodel:
 
     model = define_model2()
     # fit model
-    model.fit(trainX, trainY, epochs=EPOCHS, batch_size=BS, verbose=0) #, class_weight=classWeight)
+    model.fit(trainX, trainY, epochs=EPOCHS, batch_size=BS, verbose=0, class_weight='balanced')
     # save model
-    model.save('number_az_model_TEST.h5')
+    model.save(modelname)
     print("[INFO] training complete.")
 else:
     print("[INFO] loading model...")
