@@ -405,7 +405,7 @@ class FindCharsWords:
 		y_result = self.RunWordNumSVMModel(dataList)
 		for word, y in zip(wordList, y_result):
 			output = "".join(word.wordCharList)
-			output += ": {:.2f}".format(y)
+			output += ": {:.2f}".format(y[1])
 			print(output)
 
 
@@ -548,18 +548,18 @@ class FindCharsWords:
 		#function runs the SVM on the word dataset to classify if word is a number (1) or not (0)
 
 		# load the model
-		model = load(open('word_number_model.pkl', 'rb'))
+		model = load(open('word_number_model_prob.pkl', 'rb'))
 		# load the scaler
-		scaler = load(open('word_number_scaler.pkl', 'rb'))
+		scaler = load(open('word_number_scaler_prob.pkl', 'rb'))
 
 		#scale the data using saved scaler
 		data = np.array(dataList, dtype="float32")
 		data = scaler.transform(data)
 
 		yval = model.predict(data) #1 if number, 0 if not
-		yval2 = model.predit()
+		yval_prob = model.predict_proba(data)
 
-		return yval
+		return yval_prob
 
 	def SaveUpdateTrainingSet(self, fname, imagefile, dataList, labelList):
 		#FUNCTION NOT WORKING, not currently used
