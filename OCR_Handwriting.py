@@ -26,15 +26,44 @@ print("[INFO] loading handwriting OCR model...")
 model = load_model(args["model"])
 """
 
-
 class FindCharsWords:
+
+	InputDir: str  # image input directory
+
+	def __init__(self, inputdir: str):
+		self.InputDir = inputdir
+
+	def OCRHandwriting(self):
+		for image_file in os.listdir(self.InputDir):
+			# load the input file from disk
+			image_path = self.InputDir + '\\' + image_file
+			image = cv2.imread(image_path)
+			if type(image) is np.ndarray:  # only process if image file
+				# create new image object
+				wbimage = WBImage(self.InputDir)
+				wbimage.image = wbimage.ResizeImage(image, 2000, 2000)
+				wbimage.Preprocess()  # preprocess the image, convert to gray
+				# imageS = self.ResizeImage(gray, 800, 800)
+				# cv2.imshow("Keywords Image", imageS)
+				# cv2.waitKey(0)
+				wbimage.FindCharsWords()
+				# find characters and words, store as [image, (x, y, w, h)]
+				wbimage.RunModel(image_file)  # run the model to predict characters
+
+class WBImage:
 	# declare class variables
 	InputDir: str  # image input directory
 	Num_AZ_Model: object  # input neural network model for predicting most likely a-z and 0 - 9 character combined
 	Num_Model: object # input neural network model for predicting most likely 0 - 9 character combined
-	temp = "0123456789"
-	temp += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	LabelNames = [l for l in temp]
+	LabelNames = [l for l in "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"]
+	charList: list # list of Character class objects
+	wordList: list # list of Word class objects
+	keyWordList: list # list of keyWord class objects
+	image: object #image in colour, scaled with aspect ratio to max 2000 x 2000
+	gray: object #image in grayscale, scaled with aspect ratio to max 2000 x 2000
+	depthFrom: str #depth from found for the current image, in string format
+	depthTo: str #depth to found for the current image, in string format
+
 
 	# CharList: list #list of Character class objects found in image by neural network
 	# WordList: list #list of Word class objects comprising 2 or more characters nearby
@@ -46,6 +75,17 @@ class FindCharsWords:
 		self.InputDir = inputdir
 		self.Num_AZ_Model = load_model('number_az_model.h5')
 		self.Num_Model = load_model('mnist_number_model.h5')
+		self.charList = []
+		self.wordList = []
+		self.BuildKeyWordList()
+
+	def BuildKeyWordList(self):
+		self.keyWordList = []
+		self.keyWordList.append(KeyWord(['F', 'R', 'O', 'M'], 1, self.LabelNames))
+		self.keyWordList.append(KeyWord(['T', 'O'], 1, self.LabelNames))
+		self.keyWordList.append(KeyWord(['D', 'E', 'P', 'T', 'H'], 2, self.LabelNames))  # allow for two depths to be found
+		self.keyWordList.append(KeyWord(['D', 'R', 'Y'], 1, self.LabelNames))
+		self.keyWordList.append(KeyWord(['W', 'E', 'T'], 1, self.LabelNames))
 
 	def ResizeImage(self, img, maxW, maxH):
 		# resizes the image based on the maximum width and maximum height, returns the resized image
@@ -69,28 +109,28 @@ class FindCharsWords:
 				img = imutils.resize(img, height=maxH, width=1)
 		return img
 
-	def Preprocess(self, image):
+	def Preprocess(self):
 		# convert image to grayscale, and blur it to reduce noise
-		gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-		gray = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+		self.gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
+		self.gray = cv2.threshold(self.gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
 		# gray = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_TRIANGLE)[1]
 		# gray = cv2.GaussianBlur(gray, (5, 5), 0)
 		# Applied dilation
 		kernel3 = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-		gray = cv2.morphologyEx(gray, cv2.MORPH_ERODE, kernel3)
+		self.gray = cv2.morphologyEx(self.gray, cv2.MORPH_ERODE, kernel3)
 		# grayS = self.ResizeImage(gray, 800, 800)
 		# cv2.imshow("Preprocessed", grayS)
 		# cv2.waitKey(0)
-		return gray
+		#return gray
 
-	def FindCharsWords(self, gray):
+	def FindCharsWords(self):
 		# perform edge detection, find contours in the edge map, and sort the
 		# resulting contours from left-to-right, find words
 		# fac = 2 #factor by which to temporarily upscale images to improve edge detection
 		# tH, tW = gray.shape
 		# imgTmp = self.ResizeImage(gray, tW * fac, tH * fac) #temporarily upsize by fac to make edge detection work better
 
-		edged = cv2.Canny(gray, 30, 150)
+		edged = cv2.Canny(self.gray, 30, 150)
 		# cv2.imshow("padded", edged)
 		# cv2.waitKey(0)
 		cnts = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # cv2.CHAIN_APPROX_NONE)
@@ -101,13 +141,13 @@ class FindCharsWords:
 		# characters that we'll be OCR'ing
 		# chars = []  # pairs of character images and dimensions
 		# loop over the contours and populate if they pass the criteria
-		charList = self.ProcessChars(gray, cnts)
-		return charList
+		self.ProcessChars(cnts)
+		return
 
-	def ProcessChars(self, gray, cnt):
+	def ProcessChars(self, cnt):
 		# function takes in image and contour and filters the characters to those within words,
 		# and those with appropriate sizes, and adjusts white space
-		charList = []  # pairs of character images and dimensions
+		#charList = []  # pairs of character images and dimensions
 		# charDict = {} #charID, ndarray[28x28x1] image, (x,y,w,h) of original image
 		for i in range(len(cnt)):
 			c = cnt[i]
@@ -121,7 +161,7 @@ class FindCharsWords:
 				# extract the character and threshold it to make the character
 				# appear as *white* (foreground) on a *black* background, then
 				# grab the width and height of the thresholded image
-				roi = gray[y:y + h, x:x + w]
+				roi = self.gray[y:y + h, x:x + w]
 				thresh = cv2.threshold(roi, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
 
 				thresh = self.ResizeImage(thresh, 22, 22)  # resize the image
@@ -147,26 +187,26 @@ class FindCharsWords:
 				smallCharFilt = False
 				if h < 22:
 					smallCharFilt = True
-				charList.append(Character(padded, (x, y, w, h), False, smallCharFilt,
+				self.charList.append(Character(padded, (x, y, w, h), False, smallCharFilt,
 										  False))  # update our list of characters that will be OCR'd
 			# charDict[i] = (padded, (x, y, w, h))
 
 		# check each character to make sure not overlapping with an another character, discard if so
 		# removeList = []
-		removeList = self.CheckOverlap(charList)
+		removeList = self.CheckOverlap()
 		for i in removeList:
-			charList[i].OvlFilt = True
+			self.charList[i].OvlFilt = True
 		# for i in range(len(removeList)-1,-1,-1):
 		# del chars[removeList[i]]
 
-		wordList = []
+		#wordList = []
 		# now loop through chars and perform checks, assign to words
-		for i, char in enumerate(charList):
+		for i, char in enumerate(self.charList):
 			if not char.OvlFilt:
 				fndWord = False
 				(x, y, w, h) = char.Dims  # read in character dimensions
-				for j, word in enumerate(wordList):  # loop through existing word list
-					prevChar = charList[word.charList[len(word.charList) - 1]]  # read in previous character in word
+				for j, word in enumerate(self.wordList):  # loop through existing word list
+					prevChar = self.charList[word.charList[len(word.charList) - 1]]  # read in previous character in word
 					fndWord = self.CharChecks(i, char, prevChar, j, word)
 					if fndWord:
 						(xW, yW, wW, hW) = word.dims  # read in word dimensions
@@ -189,22 +229,22 @@ class FindCharsWords:
 					newWord = Word()
 					newWord.dims = char.Dims
 					newWord.charList = [i]
-					wordList.append(newWord)
+					self.wordList.append(newWord)
 					char.InWord = True
 				# wordList.append((char[1],[i])) #add dimensions of first character and charID to the wordlist
 
 		# final loop to throw out words that only have one character
-		for i in range(len(wordList) - 1, -1, -1):
-			words = wordList[i]
+		for i in range(len(self.wordList) - 1, -1, -1):
+			words = self.wordList[i]
 			if len(words.charList) < 2:
-				charList[words.charList[0]].InWord = False  # change back to false, no longer in a word
-				del wordList[i]
+				self.charList[words.charList[0]].InWord = False  # change back to false, no longer in a word
+				del self.wordList[i]
 		# else:#check for overlapping characters and remove from word if so
 		# removeList = self.CheckOverlap(chars)
 		# for i in range(len(removeList) - 1, -1, -1):
 		# del chars[removeList[i]]
 
-		return charList, wordList
+		#return charList, wordList
 
 	def CharChecks(self, i, char, prevChar, j, word):
 		# function runs a series of checks to check whether character 'char' is in word 'word', returns true is so, or false if not
@@ -231,15 +271,15 @@ class FindCharsWords:
 		else:
 			return True
 
-	def CheckOverlap(self, charList):
+	def CheckOverlap(self):
 		# check each character to make sure not overlapping with an another character
 		# chars [ndarray[28x28x1], (x,y,w,h)] - list of characters
 		removeList = []
-		for i, charI in enumerate(charList):
+		for i, charI in enumerate(self.charList):
 			# charI = chars[i]
 			(x, y, w, h) = charI.Dims  # read in character dimensions
 			discard: bool = False
-			for j, charJ in enumerate(charList):
+			for j, charJ in enumerate(self.charList):
 				if j == i:
 					continue
 				# charJ = chars[j]
@@ -258,20 +298,16 @@ class FindCharsWords:
 							break
 		return removeList
 
-	def RunModel(self, charList, wordList, gray, image, image_file):
+	def RunModel(self, image_file):
 		# run the model to predict characters
+		#image_file is the filename
 
 		# function level variables
 		# define the list of label names
-		imgAnno = image.copy()  # make a local copy of coloured image
+		imgAnno = self.image.copy()  # make a local copy of coloured image
 		#probNumList = []  # list corresponding to wordList indices with probability of number
 		#wordCharList = []  # list of character arrays in words corresponding to wordList
-		keyWordList = []  # list of char lists defining keywords
-		keyWordList.append(KeyWord(['F', 'R', 'O', 'M'], 1, self.LabelNames))
-		keyWordList.append(KeyWord(['T', 'O'], 1, self.LabelNames))
-		keyWordList.append(KeyWord(['D', 'E', 'P', 'T', 'H'], 2, self.LabelNames))  # allow for two depths to be found
-		keyWordList.append(KeyWord(['D', 'R', 'Y'], 1, self.LabelNames))
-		keyWordList.append(KeyWord(['W', 'E', 'T'], 1, self.LabelNames))
+
 		dryInd = 3
 		wetInd = 4
 		keywordProbMin = 0.4 #if < 40% then ignore
@@ -279,8 +315,8 @@ class FindCharsWords:
 		# extract the bounding box locations and padded characters
 		# boxes = [b[1] for b in chars]
 		# chars = np.array([c[0] for c in chars], dtype="float32")
-		boxes = [b.Dims for b in charList]
-		imageData = np.array([c.Data for c in charList], dtype="float32")
+		boxes = [b.Dims for b in self.charList]
+		imageData = np.array([c.Data for c in self.charList], dtype="float32")
 		# OCR the characters using our handwriting recognition model
 		preds = self.Num_AZ_Model.predict(imageData) #predict most likely num and char
 		predsNum = self.Num_Model.predict(imageData) #predict most likely num
@@ -296,10 +332,10 @@ class FindCharsWords:
 			# draw the prediction on the image
 			# print("[INFO] {} - {:.2f}%".format(label, prob * 100))
 			cv2.rectangle(imgAnno, (x, y), (x + w, y + h), (0, 255, 0), 2)
-			if charList[n].OvlFilt == False and charList[n].SmallFilt == False:  # only add text to the image if filter out flag is false
+			if self.charList[n].OvlFilt == False and self.charList[n].SmallFilt == False:  # only add text to the image if filter out flag is false
 				cv2.putText(imgAnno, label, (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 2)
 		# loop over words, draw rectangle around
-		for wInd, words in enumerate(wordList):
+		for wInd, words in enumerate(self.wordList):
 			# if len(words[1]) > 1: #show wordBoxes if > 1 character
 			(x, y, w, h) = words.dims
 			cv2.rectangle(imgAnno, (x, y), (x + w, y + h), (255, 51, 204), 2)  # rectangle around word
@@ -312,7 +348,7 @@ class FindCharsWords:
 		cv2.waitKey(0)
 
 		# loop over words again
-		for wInd, words in enumerate(wordList):
+		for wInd, words in enumerate(self.wordList):
 			probNum = 0  # probability that word contains a number
 			wordChars = []  # list of character indices in word
 			#wordCharsText = [] #list of characters in word
@@ -332,7 +368,7 @@ class FindCharsWords:
 			#wordCharList.append(wordChars)
 
 			# check probability of being a keyword
-			for k in keyWordList:
+			for k in self.keyWordList:
 				keyWordInd = k.CharsInd
 				probKeyWord = 0
 				if len(words.charList) == len(keyWordInd):  # same length, so check probability
@@ -347,8 +383,8 @@ class FindCharsWords:
 							k.MaxProbWordInd[n] = wInd  # corresponding word index
 							break
 		# show image of keyWords picked out, and print probabilities correct
-		imgKeyWords = image.copy()
-		for ii, k in enumerate(keyWordList):
+		imgKeyWords = self.image.copy()
+		for ii, k in enumerate(self.keyWordList):
 			for n in range(len(k.MaxProb)):
 				temp: str = ""
 				for c in k.Chars:
@@ -359,17 +395,17 @@ class FindCharsWords:
 				if k.MaxProb[n] < keywordProbMin:  # keyword not found with sufficient probability (40%)
 					execute = False
 				# hardcode for DRY vs WET
-				if ii == dryInd and keyWordList[dryInd].MaxProb[n] < keyWordList[wetInd].MaxProb[n]:
+				if ii == dryInd and self.keyWordList[dryInd].MaxProb[n] < self.keyWordList[wetInd].MaxProb[n]:
 					# compare probability of dry vs wet, only show the higher probability
 					execute = False
-				elif ii == wetInd and keyWordList[wetInd].MaxProb[n] < keyWordList[dryInd].MaxProb[n]:
+				elif ii == wetInd and self.keyWordList[wetInd].MaxProb[n] < self.keyWordList[dryInd].MaxProb[n]:
 					execute = False
 				if execute:
-					(x, y, w, h) = wordList[k.MaxProbWordInd[n]].dims
+					(x, y, w, h) = self.wordList[k.MaxProbWordInd[n]].dims
 					cv2.rectangle(imgKeyWords, (x, y), (x + w, y + h), (0, 255, 0), 2)
 					for i in range(len(k.Chars)):  # characters in keyword
 						label = k.Chars[i]
-						charInd = wordList[k.MaxProbWordInd[n]].charList[i]
+						charInd = self.wordList[k.MaxProbWordInd[n]].charList[i]
 						(xC, yC, wC, hC) = boxes[charInd]
 						cv2.putText(imgKeyWords, label, (xC - 10, yC - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255),2)
 		imageS = self.ResizeImage(imgKeyWords, 800, 800)
@@ -398,20 +434,19 @@ class FindCharsWords:
 
 		#if inp == "Y":
 			# build and scale feature matrix for words in current image, store in dataList and labelList
-			(tH, tW) = gray.shape
-			dataList, labelList, punctIDList = self.BuildFeatureMatrix(True, wordList, keyWordList, charList, tH, tW, imgKeyWords, keywordProbMin)
+			(tH, tW) = self.gray.shape
+			dataList, labelList, punctIDList = self.BuildFeatureMatrix(True, tH, tW, imgKeyWords, keywordProbMin)
 			#self.SaveUpdateTrainingSet(r'input/depth_train_dataset.hdf5', image_file, dataList, labelList)
 			self.SaveUpdateTrainingSetCSV('depth_train_dataset.csv', image_file, dataList, labelList)
 		else: #input = "N"
-			(tH, tW) = gray.shape
+			(tH, tW) = self.gray.shape
 			#dataList is size #words x n features (=5)
 			#label list is size #words x 1 (1 or 0)
-			dataList, labelList, punctIDList = self.BuildFeatureMatrix(False, wordList, keyWordList, charList, tH, tW, imgKeyWords,
-														  keywordProbMin)
+			dataList, labelList, punctIDList = self.BuildFeatureMatrix(False, tH, tW, imgKeyWords,keywordProbMin)
 		y_result = self.RunWordNumSVMModel(dataList) #output from 1 to 0 representing likelihood of being a number
 		yMaxInd = [-1,-1] #word index corresponding to highest and second highest y_result
 		yMax = [0,0] #highest and second highest y_result
-		for ind, (word, y) in enumerate(zip(wordList, y_result)):
+		for ind, (word, y) in enumerate(zip(self.wordList, y_result)):
 			output = "".join(word.wordCharList)
 			output += ": {:.2f}".format(y[1])
 			print(output)
@@ -426,14 +461,14 @@ class FindCharsWords:
 		#output results to image
 		for n, p in zip(yMaxInd, yMax): #loop through 2 number words found...
 			if p > 0.2: #only output if prob of word being number > 20%
-				(x, y, w, h) = wordList[n].dims
+				(x, y, w, h) = self.wordList[n].dims
 				cv2.rectangle(imgKeyWords, (x, y), (x + w, y + h), (0, 0, 255), 2)
 				# check for punctuation, add to image if it exists
 				if punctIDList[n] > -1:  # -1 is null val for no punctuation
-					(xP, yP, wP, hP) = charList[punctIDList[n]].Dims
+					(xP, yP, wP, hP) = self.charList[punctIDList[n]].Dims
 					cv2.putText(imgKeyWords, ".", (xP - 10, yP - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 2)
-				for c in wordList[n].charList:  # number characters, pull labels from numeric neural network
-					(xC, yC, wC, hC) = charList[c].Dims
+				for c in self.wordList[n].charList:  # number characters, pull labels from numeric neural network
+					(xC, yC, wC, hC) = self.charList[c].Dims
 					i = np.argmax(predsNum[c])
 					prob = predsNum[i]
 					label = self.LabelNames[i]
@@ -444,7 +479,7 @@ class FindCharsWords:
 
 
 
-	def BuildFeatureMatrix(self, labeldata: bool, wordList: list, keyWordList: list, charList: list, tH, tW, image, keywordProbMin):
+	def BuildFeatureMatrix(self, labeldata: bool, tH, tW, image, keywordProbMin):
 		# built feature matrix
 		#parameters:
 		#labeldata: True if interactive user labelling data
@@ -460,7 +495,7 @@ class FindCharsWords:
 		labels = [] #1 for depth value word, 0 for not. only relevant if labeldata = true, otherwise blank
 		punctIDList = [] #character ID of punction for each word, -1 if no punctuation
 		# obtain feature vector for each word
-		for n, word in enumerate(wordList):
+		for n, word in enumerate(self.wordList):
 
 			#img = image.copy()
 			#(x, y, w, h) = word.dims
@@ -470,9 +505,9 @@ class FindCharsWords:
 			#cv2.waitKey(0)
 
 			#ex_param = np.zeros(1, n_feat)
-			x_dist, y_dist = self.FindClosestKeyword(word, wordList, keyWordList, tH, tW, keywordProbMin)
+			x_dist, y_dist = self.FindClosestKeyword(word, tH, tW, keywordProbMin)
 			p_numb = word.probNum
-			punct, punctID = self.FindPunctuation(word, charList) #punct is true or false, and if true, return charID for punctuation
+			punct, punctID = self.FindPunctuation(word) #punct is true or false, and if true, return charID for punctuation
 			punctIDList.append(punctID)
 			num_chars: float = len(word.charList) / 10 #scale / 10, assume 10 is max reasonable # of characters
 			"""
@@ -512,7 +547,7 @@ class FindCharsWords:
 
 		return data, labels, punctIDList
 
-	def FindClosestKeyword(self, word, wordList, keyWordList, tH, tW, keywordProbMin):
+	def FindClosestKeyword(self, word, tH, tW, keywordProbMin):
 		# finds and returns x and y distance to closest keyword
 		# searching keywords index 0 - 2
 		(x, y, w, h) = word.dims
@@ -521,11 +556,11 @@ class FindCharsWords:
 		xMinDif: float = tW  # minimum x and y difference between word center and keyword center, initialize to image dimensions
 		yMinDif: float = tH
 		hMinDif: float = tW**2 + tH**2 #minimum hypoteneuse
-		for k, keyWord in enumerate(keyWordList):
+		for k, keyWord in enumerate(self.keyWordList):
 			if k >= 3: break  # exit loop if past 'depth', hardcoded
 			for n, p in zip(keyWord.MaxProbWordInd, keyWord.MaxProb):
 				if p < keywordProbMin: continue #ignore keyword if < min cutoff, currently 40%
-				(xK, yK, wK, hK) = wordList[n].dims
+				(xK, yK, wK, hK) = self.wordList[n].dims
 				xcK = xK + wK / 2
 				ycK = yK + hK / 2
 				xdif = xc - xcK
@@ -542,12 +577,12 @@ class FindCharsWords:
 		yMinDif /= tH
 		return xMinDif, yMinDif
 
-	def FindPunctuation(self, word, charList):
+	def FindPunctuation(self, word):
 		#function looks for punctuation sized character within word and returns true if found, false if not
 		(xW, yW, wW, hW) = word.dims
 		fndPunct: bool = False
 		punctID: int = -1
-		for ind, char in enumerate(charList):
+		for ind, char in enumerate(self.charList):
 			if char.InWord == True or char.SmallFilt == False: #character is not in a word, and has been flatted as a small character, possible punctuation
 				continue
 			(x, y, w, h) = char.Dims
@@ -641,22 +676,6 @@ class FindCharsWords:
 		f.close()
 
 
-	def OCRHandwriting(self):
-		for image_file in os.listdir(self.InputDir):
-			# load the input file from disk
-			image_path = self.InputDir + '\\' + image_file
-			image = cv2.imread(image_path)
-			if type(image) is np.ndarray:  # only process if image file
-				image = self.ResizeImage(image, 2000, 2000)
-				gray = self.Preprocess(image)  # preprocess the image, convert to gray
-				# imageS = self.ResizeImage(gray, 800, 800)
-				# cv2.imshow("Keywords Image", imageS)
-				# cv2.waitKey(0)
-				charList, wordList = self.FindCharsWords(
-					gray)  # find characters and words, store as [image, (x, y, w, h)]
-				self.RunModel(charList, wordList, gray, image, image_file)  # run the model to predict characters
-
-
 class Word:
 	dims: tuple  # = (0, 0, 0, 0)  #= np.zeros(4, dtype=int) #x,y,w,h
 	charList = []  # list of character indices
@@ -665,8 +684,7 @@ class Word:
 	avgCharH: float = 0
 	probNum: float = 0
 	wordCharList: list = [] #most likely word characters based on NN model output
-# def __init__(self):
-# self.dims = (0,0,0,0)
+
 
 
 class Character:
