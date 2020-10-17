@@ -49,6 +49,9 @@ class FindCharsWords:
 				wbimage.FindCharsWords()
 				# find characters and words, store as [image, (x, y, w, h)]
 				wbimage.RunModel(image_file)  # run the model to predict characters
+				print("Depth From: " + wbimage.depthFrom)
+				print("Depth To: " + wbimage.depthTo)
+				print("Wet / Dry: " + wbimage.wetDry)
 
 class WBImage:
 	# declare class variables
@@ -61,8 +64,10 @@ class WBImage:
 	keyWordList: list # list of keyWord class objects
 	image: object #image in colour, scaled with aspect ratio to max 2000 x 2000
 	gray: object #image in grayscale, scaled with aspect ratio to max 2000 x 2000
+	#variables for displaying on output form:
 	depthFrom: str #depth from found for the current image, in string format
 	depthTo: str #depth to found for the current image, in string format
+	wetDry: str #string, "WET" if "WET" found, or "DRY" if "DRY" found
 
 
 	# CharList: list #list of Character class objects found in image by neural network
@@ -78,6 +83,9 @@ class WBImage:
 		self.charList = []
 		self.wordList = []
 		self.BuildKeyWordList()
+		self.depthFrom = ""
+		self.depthTo = ""
+		self.wetDry = ""
 
 	def BuildKeyWordList(self):
 		self.keyWordList = []
@@ -310,7 +318,7 @@ class WBImage:
 
 		dryInd = 3
 		wetInd = 4
-		keywordProbMin = 0.4 #if < 40% then ignore
+		keywordProbMin = 0.5 #if < 50% then ignore keyword
 
 		# extract the bounding box locations and padded characters
 		# boxes = [b[1] for b in chars]
@@ -408,6 +416,9 @@ class WBImage:
 						charInd = self.wordList[k.MaxProbWordInd[n]].charList[i]
 						(xC, yC, wC, hC) = boxes[charInd]
 						cv2.putText(imgKeyWords, label, (xC - 10, yC - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255),2)
+					#store wet vs dry in class variable, if that keyword
+					if ii == wetInd or ii == dryInd:
+						self.wetDry = "".join(self.keyWordList[ii].Chars)
 		imageS = self.ResizeImage(imgKeyWords, 800, 800)
 		cv2.imshow("Keywords Image", imageS)
 		cv2.waitKey(0)
@@ -447,9 +458,10 @@ class WBImage:
 		yMaxInd = [-1,-1] #word index corresponding to highest and second highest y_result
 		yMax = [0,0] #highest and second highest y_result
 		for ind, (word, y) in enumerate(zip(self.wordList, y_result)):
-			output = "".join(word.wordCharList)
-			output += ": {:.2f}".format(y[1])
-			print(output)
+			#code to output character and corresponding number likelihood
+			#output = "".join(word.wordCharList)
+			#output += ": {:.2f}".format(y[1])
+			#print(output)
 
 			#check if most or second most likely, store if so
 			for n in range(len(yMaxInd)):
@@ -457,26 +469,41 @@ class WBImage:
 					yMax[n] = y[1]
 					yMaxInd[n] = ind
 					break
-
+		wordNumStr = []  # list of str
 		#output results to image
 		for n, p in zip(yMaxInd, yMax): #loop through 2 number words found...
+			currWord = ""
 			if p > 0.2: #only output if prob of word being number > 20%
 				(x, y, w, h) = self.wordList[n].dims
 				cv2.rectangle(imgKeyWords, (x, y), (x + w, y + h), (0, 0, 255), 2)
 				# check for punctuation, add to image if it exists
+				xP = yP = wP = hP = -1 #initialize punctuation coordinates to null val
+				punct = False
 				if punctIDList[n] > -1:  # -1 is null val for no punctuation
 					(xP, yP, wP, hP) = self.charList[punctIDList[n]].Dims
 					cv2.putText(imgKeyWords, ".", (xP - 10, yP - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 2)
+					punct = True
 				for c in self.wordList[n].charList:  # number characters, pull labels from numeric neural network
 					(xC, yC, wC, hC) = self.charList[c].Dims
 					i = np.argmax(predsNum[c])
 					prob = predsNum[i]
 					label = self.LabelNames[i]
 					cv2.putText(imgKeyWords, label, (xC - 10, yC - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 2)
+					if punct and (xP + wP/2) < (xC + wC/2): #there is punctuation, and if it fits before current character
+						currWord += "."
+						punct = False
+					currWord += label
+			wordNumStr.append(currWord)
+		#regardless of probability, assign number words to from / to respectively, store in class variables
+		if self.wordList[yMaxInd[0]].dims[2] < self.wordList[yMaxInd[1]].dims[2]: #compare y values, depth from comes first
+			self.depthFrom = wordNumStr[0]
+			self.depthTo = wordNumStr[1]
+		else:
+			self.depthFrom = wordNumStr[1]
+			self.depthTo = wordNumStr[0]
 		imageS = self.ResizeImage(imgKeyWords, 800, 800)
 		cv2.imshow("Final Image", imageS)
 		cv2.waitKey(0)
-
 
 
 	def BuildFeatureMatrix(self, labeldata: bool, tH, tW, image, keywordProbMin):
