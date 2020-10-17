@@ -30,7 +30,8 @@ model = load_model(args["model"])
 class FindCharsWords:
 	# declare class variables
 	InputDir: str  # image input directory
-	Model: object  # input neural network model
+	Num_AZ_Model: object  # input neural network model for predicting most likely a-z and 0 - 9 character combined
+	Num_Model: object # input neural network model for predicting most likely 0 - 9 character combined
 	temp = "0123456789"
 	temp += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	LabelNames = [l for l in temp]
@@ -43,7 +44,8 @@ class FindCharsWords:
 
 	def __init__(self, inputdir: str):
 		self.InputDir = inputdir
-		self.Model = load_model('number_az_model.h5')
+		self.Num_AZ_Model = load_model('number_az_model.h5')
+		self.Num_Model = load_model('mnist_number_model.h5')
 
 	def ResizeImage(self, img, maxW, maxH):
 		# resizes the image based on the maximum width and maximum height, returns the resized image
@@ -280,7 +282,8 @@ class FindCharsWords:
 		boxes = [b.Dims for b in charList]
 		imageData = np.array([c.Data for c in charList], dtype="float32")
 		# OCR the characters using our handwriting recognition model
-		preds = self.Model.predict(imageData)
+		preds = self.Num_AZ_Model.predict(imageData) #predict most likely num and char
+		predsNum = self.Num_Model.predict(imageData) #predict most likely num
 
 		# loop over the predictions and bounding box locations together
 		for n, (pred, (x, y, w, h)) in enumerate(zip(preds, boxes)):
@@ -378,6 +381,7 @@ class FindCharsWords:
 		inp: str
 		dataList = []
 		labelList = []
+		punctIDList = []
 		while not valid:
 			inp = input("Add to training set? (y/n): ")
 			if inp == "": inp = "Y"
@@ -395,18 +399,49 @@ class FindCharsWords:
 		#if inp == "Y":
 			# build and scale feature matrix for words in current image, store in dataList and labelList
 			(tH, tW) = gray.shape
-			dataList, labelList = self.BuildFeatureMatrix(True, wordList, keyWordList, charList, tH, tW, imgKeyWords, keywordProbMin)
+			dataList, labelList, punctIDList = self.BuildFeatureMatrix(True, wordList, keyWordList, charList, tH, tW, imgKeyWords, keywordProbMin)
 			#self.SaveUpdateTrainingSet(r'input/depth_train_dataset.hdf5', image_file, dataList, labelList)
 			self.SaveUpdateTrainingSetCSV('depth_train_dataset.csv', image_file, dataList, labelList)
 		else: #input = "N"
 			(tH, tW) = gray.shape
-			dataList, labelList = self.BuildFeatureMatrix(False, wordList, keyWordList, charList, tH, tW, imgKeyWords,
+			#dataList is size #words x n features (=5)
+			#label list is size #words x 1 (1 or 0)
+			dataList, labelList, punctIDList = self.BuildFeatureMatrix(False, wordList, keyWordList, charList, tH, tW, imgKeyWords,
 														  keywordProbMin)
-		y_result = self.RunWordNumSVMModel(dataList)
-		for word, y in zip(wordList, y_result):
+		y_result = self.RunWordNumSVMModel(dataList) #output from 1 to 0 representing likelihood of being a number
+		yMaxInd = [-1,-1] #word index corresponding to highest and second highest y_result
+		yMax = [0,0] #highest and second highest y_result
+		for ind, (word, y) in enumerate(zip(wordList, y_result)):
 			output = "".join(word.wordCharList)
 			output += ": {:.2f}".format(y[1])
 			print(output)
+
+			#check if most or second most likely, store if so
+			for n in range(len(yMaxInd)):
+				if y[1] > yMax[n]:
+					yMax[n] = y[1]
+					yMaxInd[n] = ind
+					break
+
+		#output results to image
+		for n, p in zip(yMaxInd, yMax): #loop through 2 number words found...
+			if p > 0.2: #only output if prob of word being number > 20%
+				(x, y, w, h) = wordList[n].dims
+				cv2.rectangle(imgKeyWords, (x, y), (x + w, y + h), (0, 0, 255), 2)
+				# check for punctuation, add to image if it exists
+				if punctIDList[n] > -1:  # -1 is null val for no punctuation
+					(xP, yP, wP, hP) = charList[punctIDList[n]].Dims
+					cv2.putText(imgKeyWords, ".", (xP - 10, yP - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 2)
+				for c in wordList[n].charList:  # number characters, pull labels from numeric neural network
+					(xC, yC, wC, hC) = charList[c].Dims
+					i = np.argmax(predsNum[c])
+					prob = predsNum[i]
+					label = self.LabelNames[i]
+					cv2.putText(imgKeyWords, label, (xC - 10, yC - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 2)
+		imageS = self.ResizeImage(imgKeyWords, 800, 800)
+		cv2.imshow("Final Image", imageS)
+		cv2.waitKey(0)
+
 
 
 	def BuildFeatureMatrix(self, labeldata: bool, wordList: list, keyWordList: list, charList: list, tH, tW, image, keywordProbMin):
@@ -423,6 +458,7 @@ class FindCharsWords:
 		n_feat = 5
 		data = [] #np.zeros(len(wordList), n_feat)
 		labels = [] #1 for depth value word, 0 for not. only relevant if labeldata = true, otherwise blank
+		punctIDList = [] #character ID of punction for each word, -1 if no punctuation
 		# obtain feature vector for each word
 		for n, word in enumerate(wordList):
 
@@ -436,7 +472,8 @@ class FindCharsWords:
 			#ex_param = np.zeros(1, n_feat)
 			x_dist, y_dist = self.FindClosestKeyword(word, wordList, keyWordList, tH, tW, keywordProbMin)
 			p_numb = word.probNum
-			punct = float(self.FindPunctuation(word, charList))
+			punct, punctID = self.FindPunctuation(word, charList) #punct is true or false, and if true, return charID for punctuation
+			punctIDList.append(punctID)
 			num_chars: float = len(word.charList) / 10 #scale / 10, assume 10 is max reasonable # of characters
 			"""
 			if len(word.charList) <= 6 and len(word.charList) >= 3:
@@ -473,7 +510,7 @@ class FindCharsWords:
 				labels.append(inputval)
 
 
-		return data, labels
+		return data, labels, punctIDList
 
 	def FindClosestKeyword(self, word, wordList, keyWordList, tH, tW, keywordProbMin):
 		# finds and returns x and y distance to closest keyword
@@ -509,7 +546,8 @@ class FindCharsWords:
 		#function looks for punctuation sized character within word and returns true if found, false if not
 		(xW, yW, wW, hW) = word.dims
 		fndPunct: bool = False
-		for char in charList:
+		punctID: int = -1
+		for ind, char in enumerate(charList):
 			if char.InWord == True or char.SmallFilt == False: #character is not in a word, and has been flatted as a small character, possible punctuation
 				continue
 			(x, y, w, h) = char.Dims
@@ -519,8 +557,9 @@ class FindCharsWords:
 			if y < yW + hW/2 or y > yW + hW + hW/4:
 				continue #not within reasonable y
 			fndPunct = True
+			punctID = ind
 			break
-		return fndPunct
+		return float(fndPunct), punctID
 
 	def SaveUpdateTrainingSetCSV(self, fname, imagefile, dataList, labelList):
 		# function checks if an existing training set exists, and builds a new one if not
