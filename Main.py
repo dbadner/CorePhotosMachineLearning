@@ -1,10 +1,14 @@
 import Detectron2WBEval as wb
 import OCR_Handwriting as hw
-import tesseract_wordboxes as tesswb
+#import tesseract_wordboxes as tesswb
 from detectron2.structures import Instances
+import UIForm as ui
 import warnings
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
+
+objUI = ui.UIForm("")
+objUI.BuildForm()
 
 inputdir = r'inputimages'
 outputdir = r'inputimages\output'
@@ -14,8 +18,8 @@ outputdir = r'inputimages\output'
 #wbextents: dict = objWB.RunModel(True, False)
 
 
-objHW = hw.FindCharsWords(outputdir)
-objHW.OCRHandwriting()
+#objHW = hw.FindCharsWords(outputdir)
+#objHW.OCRHandwriting()
 
 #objTessWB = tesswb.TessFindWords(inputdir)
 #objTessWB.RunTess(True, True) #, wbextents)
