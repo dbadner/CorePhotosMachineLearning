@@ -21,12 +21,14 @@ import torch
 class FindWhiteBoards:
     # class variables
     InputDir: str  # input directory path with photographs
-    OutputDir: str  # output directory for temp output files
+    OutputWBDir: str  # output directory for whiteboard images
+    OutputWBAnnoDir: str # output directory for annotated input image showing whiteboard location
 
     # parameterized constructor
-    def __init__(self, inputdir: str, outputdir: str):
+    def __init__(self, inputdir: str, outputWBDir: str, outputWBAnnoDir: str):
         self.InputDir = inputdir
-        self.OutputDir = outputdir
+        self.OutputWBDir = outputWBDir
+        self.OutputWBAnnoDir = outputWBAnnoDir
 
     def RegisterDataset(self):
         # register the training dataset, only need to do this once
@@ -35,7 +37,8 @@ class FindWhiteBoards:
         register_coco_instances("wb_test", {}, "roboflow/test/_annotations.coco.json", "/roboflow/test")
 
     def RunModel(self, saveCropOutput: bool, saveAnnoOutput: bool):
-        outputDict = {}
+        #outputDict = {}
+        outputList = []
 
         cfg = get_cfg()
         cfg.merge_from_file(model_zoo.get_config_file("COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml"))
@@ -43,6 +46,7 @@ class FindWhiteBoards:
         cfg.MODEL.WEIGHTS = "./wb_model/model_final.pth"
         cfg.MODEL.ROI_HEADS.NUM_CLASSES = 2
         predictor = DefaultPredictor(cfg)
+        errorCount: int = 0
 
         # image_file = "input/RC663_0040.76-0047.60_m_DRY.jpg"
 
@@ -51,7 +55,7 @@ class FindWhiteBoards:
             img: np.ndarray = cv2.imread(image_path)
 
             if type(img) is np.ndarray:  # only process if image file
-
+                print("Processing image: " + image_file)
                 output: Instances = predictor(img)["instances"]  # predict
 
                 obj: dict = output.get_fields()
@@ -70,17 +74,10 @@ class FindWhiteBoards:
                     box = np.ones(1) * (-1)
 
                 # outputlist.append(output)
-                outputDict[image_file] = box
+                #outputDict[image_file] = box
 
-                if saveCropOutput and len(scores) > 0:
-                    # crop and save the image
-                    # https://www.pyimagesearch.com/2014/01/20/basic-image-manipulations-in-python-and-opencv-resizing-scaling-rotating-and-cropping/
-                    crop_img = img[box[1].astype(int):box[3].astype(int), box[0].astype(int):box[2].astype(int)]
-                    # get file name without extension, -1 to remove "." at the end
-                    out_file_name: str = self.OutputDir + '\\' + re.search(r"(.*)\.", image_file).group(0)[:-1]
-                    out_file_name += "_cropped.png"
-                    cv2.imwrite(out_file_name, crop_img)
 
+                anno_out_filename = ""
                 if saveAnnoOutput:
                     # draw output and save to png
                     v = Visualizer(img[:, :, ::-1], MetadataCatalog.get("wb_test"), scale=1.0)
@@ -88,15 +85,29 @@ class FindWhiteBoards:
                     result_image: np.ndarray = result.get_image()[:, :, ::-1]
 
                     # get file name without extension, -1 to remove "." at the end
-                    out_file_name: str = self.OutputDir + '\\' + re.search(r"(.*)\.", image_file).group(0)[:-1]
-                    out_file_name += "_processed.png"
-
-                    cv2.imwrite(out_file_name, result_image)
+                    anno_out_filename: str = self.OutputWBAnnoDir + '\\' + re.search(r"(.*)\.", image_file).group(0)[:-1]
+                    anno_out_filename += "_WB_Anno.png"
+                    cv2.imwrite(anno_out_filename, result_image)
 
                     # code for displaying image:
                     # imgout = cv2.imread(out_file_name)
                     # cv2.imshow('Output Image', imgout)
 
                     # cv2.waitKey(0)
+                if len(scores) > 0:
+                    if saveCropOutput:
+                        # crop and save the image
+                        # https://www.pyimagesearch.com/2014/01/20/basic-image-manipulations-in-python-and-opencv-resizing-scaling-rotating-and-cropping/
+                        crop_img = img[box[1].astype(int):box[3].astype(int), box[0].astype(int):box[2].astype(int)]
+                        # get file name without extension, -1 to remove "." at the end
+                        out_file_name: str = self.OutputWBDir + '\\' + re.search(r"(.*)\.", image_file).group(0)[:-1]
+                        out_file_name += "_WB_Cropped.png"
+                        cv2.imwrite(out_file_name, crop_img)
+                        #add to the outputDictionary
+                        #outputDict[image_file] = (out_file_name, anno_out_filename)
+                        outputList.append((image_file, image_path, out_file_name, anno_out_filename))
+                else:
+                    print("WARNING: WHITE BOARD NOT FOUND IN IMAGE FILE: " + image_file + ". SKIPPING IMAGE.")
+                    errorCount += 1
 
-        return outputDict
+        return outputList, errorCount

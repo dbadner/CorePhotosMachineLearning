@@ -28,15 +28,19 @@ model = load_model(args["model"])
 
 class FindCharsWords:
 
-	InputDir: str  # image input directory
+	InputDir: str  # whiteboard image input directory (output directory of detectron)
+	OutputDir: str #final image output directory
 
-	def __init__(self, inputdir: str):
+	def __init__(self, inputdir, outputdir):
 		self.InputDir = inputdir
+		self.OutputDir = outputdir
 
-	def OCRHandwriting(self):
-		for image_file in os.listdir(self.InputDir):
+	def OCRHandwriting(self, wbOutputList):
+		for wb in wbOutputList: #for image_file in os.listdir(self.InputDir):
+			image_file = wb[0] #retrieve
+			image_path = wb[2] #retrieve the whiteboard image path
 			# load the input file from disk
-			image_path = self.InputDir + '\\' + image_file
+			#image_path = self.InputDir + '\\' + image_file
 			image = cv2.imread(image_path)
 			if type(image) is np.ndarray:  # only process if image file
 				# create new image object
@@ -438,7 +442,9 @@ class WBImage:
 		if inp == "Y":  # write image to training set folder
 			image_path = self.InputDir + '\\' + image_file
 			imageTemp = cv2.imread(image_path)
-			image_path_out = self.InputDir + '\\trainset\\' + image_file
+			trainDir = self.InputDir + '\\trainset'
+			if not os.path.exists(trainDir): os.makedirs(trainDir)
+			image_path_out = trainDir + "\\" + image_file
 			cv2.imwrite(image_path_out, imageTemp)
 		# label data
 		# write labelled data to file

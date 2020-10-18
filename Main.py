@@ -4,22 +4,39 @@ import OCR_Handwriting as hw
 from detectron2.structures import Instances
 import UIForm as ui
 import warnings
+import os
+import ctypes  # An included library with Python install.
+
+#def DefCreateOutDirs(inputdir):
+
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-objUI = ui.UIForm("")
-objUI.BuildForm()
+#objUI = ui.UIForm("")
+#objUI.BuildForm()
 
+#read in inputdirectory from user, and generate nested output directories if they do not yet exist
 inputdir = r'inputimages'
-outputdir = r'inputimages\output'
+outputWBDir = inputdir + "\\" + "Output_WB"
+if not os.path.exists(outputWBDir): os.makedirs(outputWBDir)
+outputAnnoDir = inputdir + "\\" + "Output_Anno"
+if not os.path.exists(outputAnnoDir): os.makedirs(outputAnnoDir)
+outputWBAnnoDir = inputdir + "\\" + "Output_WB_Anno"
+if not os.path.exists(outputWBAnnoDir): os.makedirs(outputWBAnnoDir)
+outputNamedDir = inputdir + "\\" + "Output_Named_Images"
+if not os.path.exists(outputNamedDir): os.makedirs(outputNamedDir)
 
+print("Reading in images and searching for white boards...")
+objWB = wb.FindWhiteBoards(inputdir, outputWBDir, outputWBAnnoDir)
+wbOutputList, errorCount = objWB.RunModel(True, True)
+#wbOutputList [image filename, image filepath, whiteboard output image filepath, annotated output image filepath]
 
-#objWB = wb.FindWhiteBoards(inputdir, outputdir)
-#wbextents: dict = objWB.RunModel(True, False)
+if errorCount > 0:
+    ctypes.windll.user32.MessageBoxW(0, "Warning: white board not found in {} image file(s). Refer to output in terminal for details.".format(errorCount), "Warning", 0)
 
-
-#objHW = hw.FindCharsWords(outputdir)
-#objHW.OCRHandwriting()
+print("Stepping through whiteboards and classifying text...")
+objHW = hw.FindCharsWords(outputWBDir, outputNamedDir)
+objHW.OCRHandwriting(wbOutputList)
 
 #objTessWB = tesswb.TessFindWords(inputdir)
 #objTessWB.RunTess(True, True) #, wbextents)
