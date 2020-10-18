@@ -1,10 +1,13 @@
 # Code modified from: https://towardsdatascience.com/understanding-detectron2-demo-bc648ea569e5
 #trained model to find whiteboards in photographs using detectron2
+import warnings
+#warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.filterwarnings('ignore')
 
 import cv2
 import numpy as np
 import re
-from detectron2.engine import DefaultPredictor
+#from detectron2.engine import DefaultPredictor
 from detectron2 import model_zoo
 from detectron2.config import get_cfg, CfgNode
 from detectron2.data import MetadataCatalog
@@ -13,9 +16,9 @@ from detectron2.structures import Instances
 from detectron2.utils.visualizer import Visualizer, VisImage
 import os
 from detectron2.data.datasets import register_coco_instances
-import tensorflow as tf
-from PIL import Image
-import torch
+#import tensorflow as tf
+#from PIL import Image
+#import torch
 
 
 class FindWhiteBoards:

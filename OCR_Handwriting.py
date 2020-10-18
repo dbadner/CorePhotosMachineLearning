@@ -1,6 +1,12 @@
 # modified from: https://www.pyimagesearch.com/2020/08/24/ocr-handwriting-recognition-with-opencv-keras-and-tensorflow/
 # identify characters within an image
 # import the necessary packages
+#handle warnings
+import warnings
+#warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.filterwarnings('ignore')
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from tensorflow.keras.models import load_model
 from imutils.contours import sort_contours
 from pickle import load
@@ -8,7 +14,6 @@ import numpy as np
 import argparse
 import imutils
 import cv2
-import os
 import h5py
 import csv
 
