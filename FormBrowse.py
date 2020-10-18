@@ -1,62 +1,28 @@
-#https://stackoverflow.com/questions/17466561/best-way-to-structure-a-tkinter-application
-
-#from tkinter import *
-from tkinter import ttk, Button
+from tkinter import *
+from tkinter import ttk
 from tkinter import filedialog
 import tkinter as tk
+import ctypes
+import os
 
-class BrowseWindow:
+class frmBrowse:
+    #shows User Interface form
+    ImagePathStr: str
 
-    def __init__(self, master):
-        self.master = master
-        self.frame = tk.Frame(self.master)
-        self.lblDir = tk.Label(self, text="Photograph folder location:")#.grid(row=0, column=0)
-        #self.txtDir = tk.Label(self, text="Photograph folder location:")#.grid(row=0, column=1)
-        self.btnBrowse = tk.Button(self.frame, text = 'Browse', width = 15, command = self.Browse)#.grid(row=0, column=2)
-        self.lblDir.pack(side=tk.LEFT)
-        self.btnBrowse.pack(side=tk.LEFT)
-
-        self.frame.pack()
-    def Browse(self):
-        self.newWindow = tk.Toplevel(self.master)
-        self.app = Demo2(self.newWindow)
-
-class Demo2:
-    def __init__(self, master):
-        self.master = master
-        self.frame = tk.Frame(self.master)
-        self.quitButton = tk.Button(self.frame, text = 'Quit', width = 25, command = self.close_windows)
-        self.quitButton.pack()
-        self.frame.pack()
-    def close_windows(self):
-        self.master.destroy()
-
-def main():
-    root = tk.Tk()
-    app = BrowseWindow(root)
-    root.mainloop()
-
-if __name__ == '__main__':
-    main()
-
-"""
-class BrowseForm(tk.Frame):
-    Path: tk.StringVar()
-
-    def __init__(self, parent, *args, **kwargs):
-        tk.Frame.__init__(self, parent, *args, **kwargs)
-        self.parent = parent
-
-        self.title("Machine Learning Core Photo Renaming App")
-        self.geometry('1200x800')
+    def __init__(self):
+        self.window = Tk()
+        self.window.title("Machine Learning Core Photo Renaming App")
+        #window.geometry('1200x800')
         # window.configure(background="gray")
+        self.ImagePath = tk.StringVar()
 
-        self.Path = tk.StringVar()
+        ttk.Label(self.window, text="Photograph folder location:").grid(row=0, column=0)
+        ttk.Button(text="Browse", command=self.browse_button).grid(row=0, column=1)
+        ttk.Entry(width=120, textvariable=self.ImagePath).grid(row=0, column=2)
+        ttk.Button(text="Run", command=self.run_button).grid(row=1, column=0)
 
-        ttk.Label(self, text="Photograph folder location:").grid(row=0, column=0)
-        #ttk.Button(text="Browse", command=browse_button).grid(row=0, column=1)
+        self.window.mainloop()
 
-    #@staticmethod
     def browse_button(self):
         # Allow user to select a directory and store it in global var
         # called folder_path
@@ -64,10 +30,21 @@ class BrowseForm(tk.Frame):
         self.setPath(filename)
 
     def setPath(self, word):
-        self.Path.set(word)
+        self.ImagePath.set(word)
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    BrowseForm(root).pack(side="top", fill="both", expand=True)
-    root.mainloop()
-"""
+    def run_button(self):
+        if not os.path.exists(self.ImagePath.get()):
+            errStr = "Error: Directory does not exist. Please select an existing directory containing your photographs."
+            ctypes.windll.user32.MessageBoxW(0, errStr, "Error", 0)
+        else:
+            self.ImagePathStr = self.ImagePath.get()
+            self.window.destroy()
+
+    #def run(self):
+#imagepath = tk.StringVar()
+#objUI = UIForm()
+
+#objUI.BuildForm()
+
+#def BuildForm():
+# https://www.tutorialspoint.com/simple-registration-form-using-python-tkinter

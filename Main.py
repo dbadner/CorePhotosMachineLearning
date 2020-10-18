@@ -2,21 +2,21 @@ import Detectron2WBEval as wb
 import OCR_Handwriting as hw
 #import tesseract_wordboxes as tesswb
 from detectron2.structures import Instances
-import UIForm as ui
+import FormBrowse as bws
 import warnings
 import os
-import ctypes  # An included library with Python install.
+import ctypes
 
 #def DefCreateOutDirs(inputdir):
 
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-#objUI = ui.UIForm("")
-#objUI.BuildForm()
+objUI = bws.frmBrowse()
 
 #read in inputdirectory from user, and generate nested output directories if they do not yet exist
-inputdir = r'inputimages'
+#inputdir = #r'inputimages'
+inputdir = objUI.ImagePath.get()
 outputWBDir = inputdir + "\\" + "Output_WB"
 if not os.path.exists(outputWBDir): os.makedirs(outputWBDir)
 outputAnnoDir = inputdir + "\\" + "Output_Anno"
