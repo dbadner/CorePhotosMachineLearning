@@ -13,7 +13,7 @@ class frmBrowse:
         self.window = Tk()
         self.window.title("Machine Learning Core Photo Renaming App")
         self.window.iconphoto(False, tk.PhotoImage(file='input\\icon.png'))
-        self.window.bind('<Return>', self.run_button)
+        #self.window.bind('<Return>', self.run_button)
         #window.geometry('1200x800')
         # window.configure(background="gray")
         self.ImagePath = tk.StringVar()

@@ -16,6 +16,7 @@ import imutils
 import cv2
 import h5py
 import csv
+import Functions as fn
 
 """
 # construct the argument parser and parse the arguments
@@ -50,7 +51,7 @@ class FindCharsWords:
 			if type(image) is np.ndarray:  # only process if image file
 				# create new image object
 				wbimage = WBImage(self.InputDir)
-				wbimage.image = wbimage.ResizeImage(image, 2000, 2000)
+				wbimage.image = fn.ResizeImage(image, 2000, 2000)
 				wbimage.Preprocess()  # preprocess the image, convert to gray
 				# imageS = self.ResizeImage(gray, 800, 800)
 				# cv2.imshow("Keywords Image", imageS)
@@ -95,6 +96,7 @@ class WBImage:
 		self.depthFrom = ""
 		self.depthTo = ""
 		self.wetDry = ""
+		#self.objFn = fn.Functions()
 
 	def BuildKeyWordList(self):
 		self.keyWordList = []
@@ -104,27 +106,7 @@ class WBImage:
 		self.keyWordList.append(KeyWord(['D', 'R', 'Y'], 1, self.LabelNames))
 		self.keyWordList.append(KeyWord(['W', 'E', 'T'], 1, self.LabelNames))
 
-	def ResizeImage(self, img, maxW, maxH):
-		# resizes the image based on the maximum width and maximum height, returns the resized image
-		if img.ndim == 2:  # black and white
-			(tH, tW) = img.shape
-		else:  # colour
-			(tH, tW, tmp) = img.shape
-		# if the width is greater than the height (usually will be), resize along the width dimension
-		if tW / tH > maxW / maxH:  # width is the defining dimension along which to resize
-			hCheck = tH / (tW / maxW)
-			if hCheck > 1.00001:  # check not < 1, will throw error
-				img = imutils.resize(img, width=maxW)
-			else:
-				img = imutils.resize(img, width=maxW, height=1)
-		# otherwise, resize along the height
-		else:
-			wCheck = tW / (tH / maxH)
-			if wCheck > 1.00001:  # check not < 1, will throw error
-				img = imutils.resize(img, height=maxH)
-			else:
-				img = imutils.resize(img, height=maxH, width=1)
-		return img
+
 
 	def Preprocess(self):
 		# convert image to grayscale, and blur it to reduce noise
@@ -181,7 +163,7 @@ class WBImage:
 				roi = self.gray[y:y + h, x:x + w]
 				thresh = cv2.threshold(roi, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
 
-				thresh = self.ResizeImage(thresh, 22, 22)  # resize the image
+				thresh = fn.ResizeImage(thresh, 22, 22)  # resize the image
 
 				# re-grab the image dimensions (now that its been resized)
 				# and then determine how much we need to pad the width and
@@ -358,7 +340,7 @@ class WBImage:
 			cv2.rectangle(imgAnno, (x, y), (x + w, y + h), (255, 51, 204), 2)  # rectangle around word
 
 		# show the image
-		imageS = self.ResizeImage(imgAnno, 800, 800)
+		imageS = fn.ResizeImage(imgAnno, 800, 800)
 		cv2.imshow("Image", imageS)
 		# grayS = self.ResizeImage(gray, 800, 800)
 		# cv2.imshow("Gray", grayS)
@@ -428,7 +410,7 @@ class WBImage:
 					#store wet vs dry in class variable, if that keyword
 					if ii == wetInd or ii == dryInd:
 						self.wetDry = "".join(self.keyWordList[ii].Chars)
-		imageS = self.ResizeImage(imgKeyWords, 800, 800)
+		imageS = fn.ResizeImage(imgKeyWords, 800, 800)
 		cv2.imshow("Keywords Image", imageS)
 		cv2.waitKey(0)
 
@@ -512,7 +494,7 @@ class WBImage:
 		else:
 			self.depthFrom = wordNumStr[1]
 			self.depthTo = wordNumStr[0]
-		imageS = self.ResizeImage(imgKeyWords, 800, 800)
+		imageS = fn.ResizeImage(imgKeyWords, 800, 800)
 		cv2.imshow("Final Image", imageS)
 		cv2.waitKey(0)
 
@@ -569,7 +551,7 @@ class WBImage:
 				img = image.copy()
 				(x, y, w, h) = word.dims
 				cv2.rectangle(img, (x, y), (x + w, y + h), (0, 176, 240), 2)
-				imageS = self.ResizeImage(img, 800, 800)
+				imageS = fn.ResizeImage(img, 800, 800)
 				cv2.imshow("Keywords Image", imageS)
 				cv2.waitKey(0)
 				valid = False
