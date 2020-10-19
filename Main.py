@@ -3,6 +3,7 @@ import OCR_Handwriting as hw
 #import tesseract_wordboxes as tesswb
 from detectron2.structures import Instances
 import FormBrowse as bws
+import FormUI as ui
 import warnings
 import os
 import ctypes
@@ -12,11 +13,11 @@ import ctypes
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-objUI = bws.frmBrowse()
+objBWS = bws.frmBrowse()
 
 #read in inputdirectory from user, and generate nested output directories if they do not yet exist
 #inputdir = #r'inputimages'
-inputdir = objUI.ImagePath.get()
+inputdir = objBWS.ImagePath.get()
 outputWBDir = inputdir + "\\" + "Output_WB"
 if not os.path.exists(outputWBDir): os.makedirs(outputWBDir)
 outputAnnoDir = inputdir + "\\" + "Output_Anno"
@@ -34,9 +35,11 @@ wbOutputList, errorCount = objWB.RunModel(True, True)
 if errorCount > 0:
     ctypes.windll.user32.MessageBoxW(0, "Warning: white board not found in {} image file(s). Refer to output in terminal for details.".format(errorCount), "Warning", 0)
 
-print("Stepping through whiteboards and classifying text...")
-objHW = hw.FindCharsWords(outputWBDir, outputNamedDir)
-objHW.OCRHandwriting(wbOutputList)
+print("Stepping through whiteboards interactively and classifying text...")
+#objHW = hw.FindCharsWords(outputWBDir, outputNamedDir)
+#objHW.OCRHandwriting(wbOutputList)
+objUI = ui.UIForm(outputWBDir, outputNamedDir, wbOutputList)
+# objUI.OCR(wbOutputList[0]) #call OCR method to read in first whiteboard image
 
 #objTessWB = tesswb.TessFindWords(inputdir)
 #objTessWB.RunTess(True, True) #, wbextents)

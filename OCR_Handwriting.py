@@ -31,25 +31,28 @@ args = vars(ap.parse_args())
 print("[INFO] loading handwriting OCR model...")
 model = load_model(args["model"])
 """
-
+"""
 class FindCharsWords:
 
 	InputDir: str  # whiteboard image input directory (output directory of detectron)
 	OutputDir: str #final image output directory
 
+
 	def __init__(self, inputdir, outputdir):
 		self.InputDir = inputdir
 		self.OutputDir = outputdir
 
+
 	def OCRHandwriting(self, wbOutputList):
 		for wb in wbOutputList: #for image_file in os.listdir(self.InputDir):
-			image_file = wb[0] #retrieve
+			image_file = wb[0] #retrieve the whiteboard image file name
 			image_path = wb[2] #retrieve the whiteboard image path
 			# load the input file from disk
 			#image_path = self.InputDir + '\\' + image_file
 			image = cv2.imread(image_path)
 			if type(image) is np.ndarray:  # only process if image file
 				# create new image object
+				print("Processing characters in image: " + image_file)
 				wbimage = WBImage(self.InputDir)
 				wbimage.image = fn.ResizeImage(image, 2000, 2000)
 				wbimage.Preprocess()  # preprocess the image, convert to gray
@@ -62,7 +65,7 @@ class FindCharsWords:
 				print("Depth From: " + wbimage.depthFrom)
 				print("Depth To: " + wbimage.depthTo)
 				print("Wet / Dry: " + wbimage.wetDry)
-
+"""
 class WBImage:
 	# declare class variables
 	InputDir: str  # image input directory
@@ -78,7 +81,8 @@ class WBImage:
 	depthFrom: str #depth from found for the current image, in string format
 	depthTo: str #depth to found for the current image, in string format
 	wetDry: str #string, "WET" if "WET" found, or "DRY" if "DRY" found
-
+	DevelopMode: bool  # if True, will show stepwise images through code more interactively, needed for training
+	# default false for general use of program
 
 	# CharList: list #list of Character class objects found in image by neural network
 	# WordList: list #list of Word class objects comprising 2 or more characters nearby
@@ -96,6 +100,7 @@ class WBImage:
 		self.depthFrom = ""
 		self.depthTo = ""
 		self.wetDry = ""
+		self.DevelopMode = False
 		#self.objFn = fn.Functions()
 
 	def BuildKeyWordList(self):
