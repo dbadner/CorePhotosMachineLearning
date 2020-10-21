@@ -18,54 +18,7 @@ import h5py
 import csv
 import Functions as fn
 
-"""
-# construct the argument parser and parse the arguments
-ap = argparse.ArgumentParser()
-ap.add_argument("-i", "--image", required=True,
-	help="path to input image")
-ap.add_argument("-m", "--model", type=str, required=True,
-	help="path to trained handwriting recognition model")
-args = vars(ap.parse_args())
 
-# load the handwriting OCR model
-print("[INFO] loading handwriting OCR model...")
-model = load_model(args["model"])
-"""
-"""
-class FindCharsWords:
-
-	InputDir: str  # whiteboard image input directory (output directory of detectron)
-	OutputDir: str #final image output directory
-
-
-	def __init__(self, inputdir, outputdir):
-		self.InputDir = inputdir
-		self.OutputDir = outputdir
-
-
-	def OCRHandwriting(self, wbOutputList):
-		for wb in wbOutputList: #for image_file in os.listdir(self.InputDir):
-			image_file = wb[0] #retrieve the whiteboard image file name
-			image_path = wb[2] #retrieve the whiteboard image path
-			# load the input file from disk
-			#image_path = self.InputDir + '\\' + image_file
-			image = cv2.imread(image_path)
-			if type(image) is np.ndarray:  # only process if image file
-				# create new image object
-				print("Processing characters in image: " + image_file)
-				wbimage = WBImage(self.InputDir)
-				wbimage.image = fn.ResizeImage(image, 2000, 2000)
-				wbimage.Preprocess()  # preprocess the image, convert to gray
-				# imageS = self.ResizeImage(gray, 800, 800)
-				# cv2.imshow("Keywords Image", imageS)
-				# cv2.waitKey(0)
-				wbimage.FindCharsWords()
-				# find characters and words, store as [image, (x, y, w, h)]
-				wbimage.RunModel(image_file)  # run the model to predict characters
-				print("Depth From: " + wbimage.depthFrom)
-				print("Depth To: " + wbimage.depthTo)
-				print("Wet / Dry: " + wbimage.wetDry)
-"""
 class WBImage:
 	# declare class variables
 	InputDir: str  # image input directory
@@ -76,6 +29,7 @@ class WBImage:
 	wordList: list # list of Word class objects
 	keyWordList: list # list of keyWord class objects
 	image: object #image in colour, scaled with aspect ratio to max 2000 x 2000
+	imageOutAnno: object # image annotated for output to FormUI, showing identified keywords, identified numbers, and characters
 	gray: object #image in grayscale, scaled with aspect ratio to max 2000 x 2000
 	#variables for displaying on output form:
 	depthFrom: str #depth from found for the current image, in string format
@@ -91,6 +45,7 @@ class WBImage:
 	# KeyWordList: list  # list of char lists defining keywords
 
 	def __init__(self, inputdir: str):
+		self.DevelopMode = False #SET TO TRUE FOR DEBUGGING / TRAINING NEW DATA
 		self.InputDir = inputdir
 		self.Num_AZ_Model = load_model('number_az_model.h5')
 		self.Num_Model = load_model('mnist_number_model.h5')
@@ -100,7 +55,6 @@ class WBImage:
 		self.depthFrom = ""
 		self.depthTo = ""
 		self.wetDry = ""
-		self.DevelopMode = False
 		#self.objFn = fn.Functions()
 
 	def BuildKeyWordList(self):
@@ -110,8 +64,6 @@ class WBImage:
 		self.keyWordList.append(KeyWord(['D', 'E', 'P', 'T', 'H'], 2, self.LabelNames))  # allow for two depths to be found
 		self.keyWordList.append(KeyWord(['D', 'R', 'Y'], 1, self.LabelNames))
 		self.keyWordList.append(KeyWord(['W', 'E', 'T'], 1, self.LabelNames))
-
-
 
 	def Preprocess(self):
 		# convert image to grayscale, and blur it to reduce noise
@@ -335,21 +287,23 @@ class WBImage:
 			label = self.LabelNames[i]
 			# draw the prediction on the image
 			# print("[INFO] {} - {:.2f}%".format(label, prob * 100))
-			cv2.rectangle(imgAnno, (x, y), (x + w, y + h), (0, 255, 0), 2)
-			if self.charList[n].OvlFilt == False and self.charList[n].SmallFilt == False:  # only add text to the image if filter out flag is false
-				cv2.putText(imgAnno, label, (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 2)
-		# loop over words, draw rectangle around
-		for wInd, words in enumerate(self.wordList):
-			# if len(words[1]) > 1: #show wordBoxes if > 1 character
-			(x, y, w, h) = words.dims
-			cv2.rectangle(imgAnno, (x, y), (x + w, y + h), (255, 51, 204), 2)  # rectangle around word
+			if self.DevelopMode: #only show cv2 image if in develop mode
+				cv2.rectangle(imgAnno, (x, y), (x + w, y + h), (0, 255, 0), 2)
+				if self.charList[n].OvlFilt == False and self.charList[n].SmallFilt == False:  # only add text to the image if filter out flag is false
+					cv2.putText(imgAnno, label, (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 0, 0), 2)
+		if self.DevelopMode:  # only show cv2 image if in develop mode
+			# loop over words, draw rectangle around
+			for wInd, words in enumerate(self.wordList):
+				# if len(words[1]) > 1: #show wordBoxes if > 1 character
+				(x, y, w, h) = words.dims
+				cv2.rectangle(imgAnno, (x, y), (x + w, y + h), (255, 0, 255), 2)  # rectangle around word
 
-		# show the image
-		imageS = fn.ResizeImage(imgAnno, 800, 800)
-		cv2.imshow("Image", imageS)
-		# grayS = self.ResizeImage(gray, 800, 800)
-		# cv2.imshow("Gray", grayS)
-		cv2.waitKey(0)
+			# show the image
+			imageS = fn.ResizeImage(imgAnno, 800, 800)
+			cv2.imshow("Image", imageS)
+			# grayS = self.ResizeImage(gray, 800, 800)
+			# cv2.imshow("Gray", grayS)
+			cv2.waitKey(0)
 
 		# loop over words again
 		for wInd, words in enumerate(self.wordList):
@@ -387,7 +341,7 @@ class WBImage:
 							k.MaxProbWordInd[n] = wInd  # corresponding word index
 							break
 		# show image of keyWords picked out, and print probabilities correct
-		imgKeyWords = self.image.copy()
+		self.imageOutAnno = self.image.copy()
 		for ii, k in enumerate(self.keyWordList):
 			for n in range(len(k.MaxProb)):
 				temp: str = ""
@@ -406,52 +360,51 @@ class WBImage:
 					execute = False
 				if execute:
 					(x, y, w, h) = self.wordList[k.MaxProbWordInd[n]].dims
-					cv2.rectangle(imgKeyWords, (x, y), (x + w, y + h), (0, 255, 0), 2)
+					cv2.rectangle(self.imageOutAnno, (x, y), (x + w, y + h), (0, 255, 0), 2)
 					for i in range(len(k.Chars)):  # characters in keyword
 						label = k.Chars[i]
 						charInd = self.wordList[k.MaxProbWordInd[n]].charList[i]
 						(xC, yC, wC, hC) = boxes[charInd]
-						cv2.putText(imgKeyWords, label, (xC - 10, yC - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255),2)
+						cv2.putText(self.imageOutAnno, label, (xC - 10, yC - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 0, 0), 2)
+						#also draw box
+						cv2.rectangle(self.imageOutAnno, (xC, yC), (xC + wC, yC + hC), (0, 0, 255), 2)
 					#store wet vs dry in class variable, if that keyword
 					if ii == wetInd or ii == dryInd:
 						self.wetDry = "".join(self.keyWordList[ii].Chars)
-		imageS = fn.ResizeImage(imgKeyWords, 800, 800)
-		cv2.imshow("Keywords Image", imageS)
-		cv2.waitKey(0)
+		if self.DevelopMode:  # only show cv2 image if in develop mode
+			imageS = fn.ResizeImage(self.imageOutAnno, 800, 800)
+			cv2.imshow("Keywords Image", imageS)
+			cv2.waitKey(0)
 
-		# TEMPORARY - CREATE Training Set by saving photos to folders
-		valid = False
-		inp: str
-		dataList = []
-		labelList = []
-		punctIDList = []
-		while not valid:
-			inp = input("Add to training set? (y/n): ")
-			if inp == "": inp = "Y"
-			inp = inp.upper()
-			if inp == "Y" or inp == "N":
-				valid = True
-		if inp == "Y":  # write image to training set folder
-			image_path = self.InputDir + '\\' + image_file
-			imageTemp = cv2.imread(image_path)
-			trainDir = self.InputDir + '\\trainset'
-			if not os.path.exists(trainDir): os.makedirs(trainDir)
-			image_path_out = trainDir + "\\" + image_file
-			cv2.imwrite(image_path_out, imageTemp)
-		# label data
-		# write labelled data to file
+		inpBool = False
+		if self.DevelopMode:  # only show cv2 image if in develop mode
+			# For training mode: Training Set by saving photos to folders
+			valid = False
+			inp: str
+			while not valid:
+				inp = input("Add to training set? (y/n): ")
+				if inp == "": inp = "Y"
+				inp = inp.upper()
+				if inp == "Y" or inp == "N":
+					valid = True
+			if inp == "Y":  # write image to training set folder
+				image_path = self.InputDir + '\\' + image_file
+				imageTemp = cv2.imread(image_path)
+				trainDir = self.InputDir + '\\trainset'
+				if not os.path.exists(trainDir): os.makedirs(trainDir)
+				image_path_out = trainDir + "\\" + image_file
+				cv2.imwrite(image_path_out, imageTemp)
+				# build and scale feature matrix for words in current image, store in dataList and labelList
+				inpBool = True
 
-		#if inp == "Y":
-			# build and scale feature matrix for words in current image, store in dataList and labelList
-			(tH, tW) = self.gray.shape
-			dataList, labelList, punctIDList = self.BuildFeatureMatrix(True, tH, tW, imgKeyWords, keywordProbMin)
-			#self.SaveUpdateTrainingSet(r'input/depth_train_dataset.hdf5', image_file, dataList, labelList)
+		#dataList = []
+		#labelList = []
+		#punctIDList = []
+		(tH, tW) = self.gray.shape
+		dataList, labelList, punctIDList = self.BuildFeatureMatrix(inpBool, tH, tW, self.imageOutAnno, keywordProbMin)
+		if inpBool:
 			self.SaveUpdateTrainingSetCSV('depth_train_dataset.csv', image_file, dataList, labelList)
-		else: #input = "N"
-			(tH, tW) = self.gray.shape
-			#dataList is size #words x n features (=5)
-			#label list is size #words x 1 (1 or 0)
-			dataList, labelList, punctIDList = self.BuildFeatureMatrix(False, tH, tW, imgKeyWords,keywordProbMin)
+
 		y_result = self.RunWordNumSVMModel(dataList) #output from 1 to 0 representing likelihood of being a number
 		yMaxInd = [-1,-1] #word index corresponding to highest and second highest y_result
 		yMax = [0,0] #highest and second highest y_result
@@ -473,20 +426,23 @@ class WBImage:
 			currWord = ""
 			if p > 0.2: #only output if prob of word being number > 20%
 				(x, y, w, h) = self.wordList[n].dims
-				cv2.rectangle(imgKeyWords, (x, y), (x + w, y + h), (0, 0, 255), 2)
+				cv2.rectangle(self.imageOutAnno, (x, y), (x + w, y + h), (255, 0, 255), 2)
 				# check for punctuation, add to image if it exists
 				xP = yP = wP = hP = -1 #initialize punctuation coordinates to null val
 				punct = False
 				if punctIDList[n] > -1:  # -1 is null val for no punctuation
 					(xP, yP, wP, hP) = self.charList[punctIDList[n]].Dims
-					cv2.putText(imgKeyWords, ".", (xP - 10, yP - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 2)
+					cv2.putText(self.imageOutAnno, ".", (xP - 10, yP - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 0, 0), 2)
 					punct = True
-				for c in self.wordList[n].charList:  # number characters, pull labels from numeric neural network
+				for c in self.wordList[n].charList:  # number characters,
+					#output box to image around character
 					(xC, yC, wC, hC) = self.charList[c].Dims
+					cv2.rectangle(self.imageOutAnno, (xC, yC), (xC + wC, yC + hC), (0, 0, 255), 2)
+					# pull labels from numeric neural network
 					i = np.argmax(predsNum[c])
 					prob = predsNum[i]
 					label = self.LabelNames[i]
-					cv2.putText(imgKeyWords, label, (xC - 10, yC - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 2)
+					cv2.putText(self.imageOutAnno, label, (xC - 10, yC - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 0, 0), 2)
 					if punct and (xP + wP/2) < (xC + wC/2): #there is punctuation, and if it fits before current character
 						currWord += "."
 						punct = False
@@ -499,9 +455,11 @@ class WBImage:
 		else:
 			self.depthFrom = wordNumStr[1]
 			self.depthTo = wordNumStr[0]
-		imageS = fn.ResizeImage(imgKeyWords, 800, 800)
-		cv2.imshow("Final Image", imageS)
-		cv2.waitKey(0)
+
+		if self.DevelopMode:  # only show cv2 image if in develop mode
+			imageS = fn.ResizeImage(self.imageOutAnno, 800, 800)
+			cv2.imshow("Final Image", imageS)
+			cv2.waitKey(0)
 
 
 	def BuildFeatureMatrix(self, labeldata: bool, tH, tW, image, keywordProbMin):
@@ -750,3 +708,52 @@ class KeyWord:
 					keyWordInd.append(i)
 					break
 		return keyWordInd
+
+"""
+# construct the argument parser and parse the arguments
+ap = argparse.ArgumentParser()
+ap.add_argument("-i", "--image", required=True,
+	help="path to input image")
+ap.add_argument("-m", "--model", type=str, required=True,
+	help="path to trained handwriting recognition model")
+args = vars(ap.parse_args())
+
+# load the handwriting OCR model
+print("[INFO] loading handwriting OCR model...")
+model = load_model(args["model"])
+"""
+"""
+class FindCharsWords:
+
+	InputDir: str  # whiteboard image input directory (output directory of detectron)
+	OutputDir: str #final image output directory
+
+
+	def __init__(self, inputdir, outputdir):
+		self.InputDir = inputdir
+		self.OutputDir = outputdir
+
+
+	def OCRHandwriting(self, wbOutputList):
+		for wb in wbOutputList: #for image_file in os.listdir(self.InputDir):
+			image_file = wb[0] #retrieve the whiteboard image file name
+			image_path = wb[2] #retrieve the whiteboard image path
+			# load the input file from disk
+			#image_path = self.InputDir + '\\' + image_file
+			image = cv2.imread(image_path)
+			if type(image) is np.ndarray:  # only process if image file
+				# create new image object
+				print("Processing characters in image: " + image_file)
+				wbimage = WBImage(self.InputDir)
+				wbimage.image = fn.ResizeImage(image, 2000, 2000)
+				wbimage.Preprocess()  # preprocess the image, convert to gray
+				# imageS = self.ResizeImage(gray, 800, 800)
+				# cv2.imshow("Keywords Image", imageS)
+				# cv2.waitKey(0)
+				wbimage.FindCharsWords()
+				# find characters and words, store as [image, (x, y, w, h)]
+				wbimage.RunModel(image_file)  # run the model to predict characters
+				print("Depth From: " + wbimage.depthFrom)
+				print("Depth To: " + wbimage.depthTo)
+				print("Wet / Dry: " + wbimage.wetDry)
+"""

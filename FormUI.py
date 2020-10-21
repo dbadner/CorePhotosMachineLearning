@@ -20,6 +20,8 @@ class UIForm:
     WBOutputList: list # list of tuples of (image filename, image filepath (including filename),
     # whiteboard output image filepath, # annotated output image filepath)
     OutputListInd: int
+    imgTK: object
+    imgTK2: object
 
     #shows User Interface form
     #ImagePath: str#tk.StringVar
@@ -33,7 +35,7 @@ class UIForm:
         self.window = Tk()
         self.window.title("Machine Learning Core Photo Renaming App")
         self.window.iconphoto(False, tk.PhotoImage(file='input\\icon.png'))
-        self.window.geometry('1000x600')
+        self.window.geometry('1100x600')
         #window.geometry('1200x800')
         # window.configure(background="gray")
         #declare stringvars corresponding to entries
@@ -87,6 +89,9 @@ class UIForm:
         L = ttk.Label(self.window, text="*Note: Do not include file extension in file name above.")
         L.place(x=xdim[1],y = 25 + btm)
 
+        #default units to 'm'
+        self.Unitsstr.set("m")
+
         #for i in range(5):
             #ttk.Entry(width=20).grid(row=i + 1, column=2)
             # ent.pack(side = RIGHT, expand = YES, fill = X)
@@ -99,11 +104,11 @@ class UIForm:
         #show images:
         L = ttk.Label(self.window, text="Core photograph:")
         L.place(x=xdim[2], y=10)
-        self.canvas1 = Canvas(self.window, height=250)  # dims[0], width = dims[1])
+        self.canvas1 = Canvas(self.window, height=250, width=800)  # dims[0], width = dims[1])
         self.canvas1.place(x=xdim[2], y=10 + 20)
         L = ttk.Label(self.window, text="Whiteboard found:")
         L.place(x=xdim[2], y=ydim[2])
-        self.canvas2 = Canvas(self.window, height=250)  # dims[0], width = dims[1])
+        self.canvas2 = Canvas(self.window, height=250, width=800)  # dims[0], width = dims[1])
         self.canvas2.place(x=xdim[2], y=ydim[2] + 20)
 
         #store in tuple for reference later
@@ -156,13 +161,14 @@ class UIForm:
             #read in appropriate images
             #first, read in the annotated core photo as CV2, then resize and convert
             image = cv2.imread(self.WBOutputList[self.OutputListInd][3])
-            imgTK = self.imageIntoCanvas(image)
-            self.canvas1.create_image(0, 0, anchor=NW, image=imgTK)
+            self.imgTK = self.imageIntoCanvas(image)
+            self.canvas1.create_image(0, 0, anchor=NW, image=self.imgTK)
 
             #next, read in whiteboard image
-            image2 = cv2.imread(self.WBOutputList[self.OutputListInd][2])
-            imgTK2 = self.imageIntoCanvas(image2)
-            self.canvas2.create_image(0, 0, anchor=NW, image=imgTK2)
+            #image2 = cv2.imread(self.WBOutputList[self.OutputListInd][2])
+            #image2 = cv2.imread(wbimage.imageOutAnno)
+            self.imgTK2 = self.imageIntoCanvas(wbimage.imageOutAnno)
+            self.canvas2.create_image(0, 0, anchor=NW, image=self.imgTK2)
 
 
     def imageIntoCanvas(self, image):
@@ -171,7 +177,7 @@ class UIForm:
         #wb = hw.WBImage("")
         image = fn.ResizeImage(image, 800, 250) #resize image, pass max x and y dimensions
         dims = image.shape
-        impil = Image.fromarray(image)  # make PIL image
+        impil = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))  # make PIL image
         photo = ImageTk.PhotoImage(impil)
         # img = PhotoImage(photo)
         #self.canvasesTup[canvind].create_image(0, 0, anchor=NW, image=photo)
@@ -198,7 +204,7 @@ class UIForm:
         temp, suffix = os.path.splitext(self.WBOutputList[self.OutputListInd][0])
         new_name = self.OutputDir + "\\" + self.FileNamestr.get() + suffix
         if os.path.exists(new_name):
-            result = ctypes.windll.user32.MessageBoxW(1,"Warning: File "+ self.FileNamestr.get() + suffix + " already exists" +
+            result = ctypes.windll.user32.MessageBoxW(0,"Warning: File "+ self.FileNamestr.get() + suffix + " already exists" +
                     " in output directory. Press OK to overwrite or Cancel to rename.", "Warning", 1)
             if result == 2: return #Cancel
         shutil.copy(self.WBOutputList[self.OutputListInd][1], new_name)
@@ -221,7 +227,12 @@ class UIForm:
 
     def next_photo(self):
         self.OutputListInd += 1
-        self.OCR(self.WBOutputList[self.OutputListInd]) #process the next image
+        if self.OutputListInd < len(self.WBOutputList):
+            self.OCR(self.WBOutputList[self.OutputListInd]) #process the next image
+        else: # all photos in directory complete, exit
+            ctypes.windll.user32.MessageBoxW(0,"All photos in specified folder location complete. " +
+                                             "Press OK to exit the program. ","Notice", 0)
+            self.window.destroy()
 
 
 #objUI = UIForm()
