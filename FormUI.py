@@ -10,6 +10,7 @@ import OCR_Handwriting as hw
 import os
 import shutil
 import ctypes
+import re
 
 
 class UIForm:
@@ -154,8 +155,8 @@ class UIForm:
 
             #set fields on form
             self.InputPhotoName.set("Input photo file name: " + image_file)  # set the label at the top of the form
-            self.DepthFromstr.set(wbimage.depthFrom)
-            self.DepthTostr.set(wbimage.depthTo)
+            self.DepthFromstr.set(self.AddLeadingZeros(wbimage.depthFrom))
+            self.DepthTostr.set(self.AddLeadingZeros(wbimage.depthTo))
             self.WetDrystr.set(wbimage.wetDry)
 
             #read in appropriate images
@@ -169,6 +170,17 @@ class UIForm:
             #image2 = cv2.imread(wbimage.imageOutAnno)
             self.imgTK2 = self.imageIntoCanvas(wbimage.imageOutAnno)
             self.canvas2.create_image(0, 0, anchor=NW, image=self.imgTK2)
+
+    def AddLeadingZeros(self, strNum: str):
+        #function adds leading zeros to string of numbers if < 4 x 0s
+        l = len(strNum)
+        strOut = strNum
+        left = re.search(r"(.*)\.", strNum)
+        if left is not None:
+            l = len(left.group(0)[:-1]) #find length of the characters to the left of the "."
+            if l < 4:
+                strOut = "0"*(4-l) + strNum
+        return strOut
 
 
     def imageIntoCanvas(self, image):

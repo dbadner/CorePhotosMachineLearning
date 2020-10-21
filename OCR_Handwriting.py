@@ -409,10 +409,11 @@ class WBImage:
 		yMaxInd = [-1,-1] #word index corresponding to highest and second highest y_result
 		yMax = [0,0] #highest and second highest y_result
 		for ind, (word, y) in enumerate(zip(self.wordList, y_result)):
-			#code to output character and corresponding number likelihood
-			#output = "".join(word.wordCharList)
-			#output += ": {:.2f}".format(y[1])
-			#print(output)
+			#code to output word characters and corresponding number likelihood
+			if self.DevelopMode:
+				output = "".join(word.wordCharList)
+				output += ": {:.2f}".format(y[1])
+				print(output)
 
 			#check if most or second most likely, store if so
 			for n in range(len(yMaxInd)):
@@ -449,7 +450,7 @@ class WBImage:
 					currWord += label
 			wordNumStr.append(currWord)
 		#regardless of probability, assign number words to from / to respectively, store in class variables
-		if self.wordList[yMaxInd[0]].dims[2] < self.wordList[yMaxInd[1]].dims[2]: #compare y values, depth from comes first
+		if self.wordList[yMaxInd[0]].dims[0] < self.wordList[yMaxInd[1]].dims[0]: #compare x values, depth from comes first
 			self.depthFrom = wordNumStr[0]
 			self.depthTo = wordNumStr[1]
 		else:
@@ -613,7 +614,7 @@ class WBImage:
 		data = np.array(dataList, dtype="float32")
 		data = scaler.transform(data)
 
-		yval = model.predict(data) #1 if number, 0 if not
+		#yval = model.predict(data) #1 if number, 0 if not
 		yval_prob = model.predict_proba(data)
 
 		return yval_prob
