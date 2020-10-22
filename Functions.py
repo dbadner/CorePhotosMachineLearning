@@ -1,6 +1,9 @@
 import imutils
+import csv
 
 def ResizeImage(img, maxW, maxH):
+
+    ''
     # resizes the cv2 image based on the maximum width and maximum height, returns the resized image
     if img.ndim == 2:  # black and white
         (tH, tW) = img.shape
@@ -21,3 +24,18 @@ def ResizeImage(img, maxW, maxH):
         else:
             img = imutils.resize(img, height=maxH, width=1)
     return img
+
+
+def OutputToCSV(fname, dataList):
+    # function outputs dataset to CSV
+    # check if file exists:
+    #exists = os.path.exists(fname)
+    writemode = 'w'
+    #if exists: writemode = 'a'
+    with open(fname, writemode) as csvfile:
+        filewriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
+        for dataLine in dataList:
+            outputlist = []
+            for a in dataLine:
+                outputlist.append(str(a))
+            filewriter.writerow(outputlist)

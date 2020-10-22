@@ -45,7 +45,7 @@ class WBImage:
 	# KeyWordList: list  # list of char lists defining keywords
 
 	def __init__(self, inputdir: str):
-		self.DevelopMode = False #SET TO TRUE FOR DEBUGGING / TRAINING NEW DATA
+		self.DevelopMode = True #SET TO TRUE FOR DEBUGGING / TRAINING NEW DATA
 		self.InputDir = inputdir
 		self.Num_AZ_Model = load_model('number_az_model.h5')
 		self.Num_Model = load_model('mnist_number_model.h5')
@@ -416,16 +416,20 @@ class WBImage:
 				print(output)
 
 			#check if most or second most likely, store if so
-			for n in range(len(yMaxInd)):
-				if y[1] > yMax[n]:
-					yMax[n] = y[1]
-					yMaxInd[n] = ind
-					break
+			#for n in range(len(yMaxInd)):
+			if y[1] > yMax[0]:
+				yMax[1] = yMax[0]
+				yMaxInd[1] = yMaxInd[0]
+				yMax[0] = y[1]
+				yMaxInd[0] = ind
+			elif y[1] > yMax[1]:
+				yMax[1] = y[1]
+				yMaxInd[1] = ind
 		wordNumStr = []  # list of str
 		#output results to image
 		for n, p in zip(yMaxInd, yMax): #loop through 2 number words found...
 			currWord = ""
-			if p > 0.2: #only output if prob of word being number > 20%
+			if p > 0.5: #only output if prob of word being number > 50%
 				(x, y, w, h) = self.wordList[n].dims
 				cv2.rectangle(self.imageOutAnno, (x, y), (x + w, y + h), (255, 0, 255), 2)
 				# check for punctuation, add to image if it exists
@@ -570,7 +574,7 @@ class WBImage:
 			if char.InWord == True or char.SmallFilt == False: #character is not in a word, and has been flatted as a small character, possible punctuation
 				continue
 			(x, y, w, h) = char.Dims
-			# check within lower half of word, expanded downward by 1/3 of word height
+			# check within lower quarter of word, expanded downward by 1/4 of word height
 			if x < xW + (wW*0.1) or x > xW + wW - (wW*0.1): #search middle 80% of word for punctuation
 				continue #not within x
 			if y < yW + hW/2 or y > yW + hW + hW/4:
