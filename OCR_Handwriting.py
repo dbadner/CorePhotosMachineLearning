@@ -19,6 +19,7 @@ import csv
 import Functions as fn
 
 
+
 class WBImage:
 	# declare class variables
 	InputDir: str  # image input directory

@@ -19,7 +19,9 @@ from detectron2.data.datasets import register_coco_instances
 #import tensorflow as tf
 #from PIL import Image
 #import torch
-
+#import Functions as fn
+#import time
+#import imutils
 
 class FindWhiteBoards:
     # class variables
@@ -40,6 +42,7 @@ class FindWhiteBoards:
         register_coco_instances("wb_test", {}, "roboflow/test/_annotations.coco.json", "/roboflow/test")
 
     def RunModel(self, saveCropOutput: bool, saveAnnoOutput: bool):
+        #t0 = time.time()
         #outputDict = {}
         outputList = []
 
@@ -51,14 +54,36 @@ class FindWhiteBoards:
         predictor = DefaultPredictor(cfg)
         errorCount: int = 0
 
+        #print("Model imported: {:.3f}".format(time.time() - t0))
+
         # image_file = "input/RC663_0040.76-0047.60_m_DRY.jpg"
 
         for image_file in os.listdir(self.InputDir):
             image_path = self.InputDir + '\\' + image_file
             img: np.ndarray = cv2.imread(image_path)
 
+            #print("Processing file: {:.3f}".format(time.time() - t0))
+
             if type(img) is np.ndarray:  # only process if image file
                 print("Processing image: " + image_file)
+
+                """
+                # resize image to save on computation time
+                dW = 100  # desired width
+
+                imgRe: np.ndarray
+                # if img.ndim == 2:  # black and white
+                #    (tH, tW) = img.shape
+                # else:  # colour
+                (tH, tW, tmp) = img.shape
+                if tW > dW:
+                    imgRe = imutils.resize(img, width=dW)  # resize the image
+                    wRatio = tW / dW
+                else:
+                    imgRe = img.copy()
+                    wRatio = 1
+                """
+
                 output: Instances = predictor(img)["instances"]  # predict
 
                 obj: dict = output.get_fields()
@@ -73,6 +98,7 @@ class FindWhiteBoards:
 
                 if len(scores) > 0:
                     box: np.ndarray = obj['pred_boxes'].tensor.cpu().numpy()[indmaxscore]
+                    #box = box * wRatio
                 else:
                     box = np.ones(1) * (-1)
 
