@@ -46,7 +46,7 @@ class WBImage:
 	# KeyWordList: list  # list of char lists defining keywords
 
 	def __init__(self, inputdir: str):
-		self.DevelopMode = True #SET TO TRUE FOR DEBUGGING / TRAINING NEW DATA
+		self.DevelopMode = False #SET TO TRUE FOR DEBUGGING / TRAINING NEW DATA
 		self.InputDir = inputdir
 		self.Num_AZ_Model = load_model('number_az_model.h5')
 		self.Num_Model = load_model('mnist_number_model.h5')

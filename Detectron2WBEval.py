@@ -37,14 +37,20 @@ class FindWhiteBoards:
 
     def RegisterDataset(self):
         # register the training dataset, only need to do this once
-        register_coco_instances("wb_train", {}, "roboflow/train/_annotations.coco.json", "/roboflow/train")
-        register_coco_instances("wb_val", {}, "roboflow/valid/_annotations.coco.json", "/roboflow/valid")
-        register_coco_instances("wb_test", {}, "roboflow/test/_annotations.coco.json", "/roboflow/test")
+        catalogList = MetadataCatalog.list()
+        if 'wb_train' not in catalogList:
+            register_coco_instances("wb_train", {}, "roboflow/train/_annotations.coco.json", "/roboflow/train")
+        if 'wb_val' not in catalogList:
+            register_coco_instances("wb_val", {}, "roboflow/valid/_annotations.coco.json", "/roboflow/valid")
+        if 'wb_test' not in catalogList:
+            register_coco_instances("wb_test", {}, "roboflow/test/_annotations.coco.json", "/roboflow/test")
 
     def RunModel(self, saveCropOutput: bool, saveAnnoOutput: bool):
         #t0 = time.time()
         #outputDict = {}
         outputList = []
+
+        self.RegisterDataset()
 
         cfg = get_cfg()
         cfg.merge_from_file(model_zoo.get_config_file("COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml"))
