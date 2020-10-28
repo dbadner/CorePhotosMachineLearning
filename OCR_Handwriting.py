@@ -62,7 +62,7 @@ class WBImage:
 	def BuildKeyWordList(self):
 		self.keyWordList = []
 		self.keyWordList.append(KeyWord(['F', 'R', 'O', 'M'], 1, self.LabelNames))
-		self.keyWordList.append(KeyWord(['T', 'O'], 1, self.LabelNames))
+		self.keyWordList.append(KeyWord(['T', 'O'], 1, self.LabelNames)) #IGNORING DEPTH TO AS OF 28-OCT, TOO ERRONEOUS
 		self.keyWordList.append(KeyWord(['D', 'E', 'P', 'T', 'H'], 2, self.LabelNames))  # allow for two depths to be found
 		self.keyWordList.append(KeyWord(['D', 'R', 'Y'], 1, self.LabelNames))
 		self.keyWordList.append(KeyWord(['W', 'E', 'T'], 1, self.LabelNames))
@@ -413,6 +413,8 @@ class WBImage:
 				execute = True
 				if k.MaxProb[n] < keywordProbMin:  # keyword not found with sufficient probability (40%)
 					execute = False
+				if "".join(k.Chars) == "TO": #skip if keyword is "TO" - ignoring this keyword as of 28-oct
+					execute = False
 				# hardcode for DRY vs WET
 				if ii == dryInd and self.keyWordList[dryInd].MaxProb[n] < self.keyWordList[wetInd].MaxProb[n]:
 					# compare probability of dry vs wet, only show the higher probability
@@ -606,7 +608,8 @@ class WBImage:
 		yMinDif: float = tH
 		hMinDif: float = tW**2 + tH**2 #minimum hypoteneuse
 		for k, keyWord in enumerate(self.keyWordList):
-			if k >= 3: break  # exit loop if past 'depth', hardcoded
+			if k >= 3 or "".join(keyWord.Chars)=="TO": break  # exit loop if past 'depth' keyword, hardcoded
+			#added break to above statement if keyword is "TO"; we are now ignoring this
 			for n, p in zip(keyWord.MaxProbWordInd, keyWord.MaxProb):
 				if p < keywordProbMin: continue #ignore keyword if < min cutoff, currently 40%
 				(xK, yK, wK, hK) = self.wordList[n].dims

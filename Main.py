@@ -8,7 +8,7 @@ import ctypes
 
 
 def main():
-    skipDetectron = False
+    skipDetectron = True #skip detectron whiteboard recognition, default = false, for development
 
 
     warnings.simplefilter(action='ignore', category=FutureWarning)
