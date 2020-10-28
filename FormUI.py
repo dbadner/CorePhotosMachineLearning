@@ -149,9 +149,9 @@ class UIForm:
             wbimage.FindCharsWords()
             # find characters and words, store as [image, (x, y, w, h)]
             wbimage.RunModel(image_file)  # run the model to predict characters
-            print("Depth From: " + wbimage.depthFrom)
-            print("Depth To: " + wbimage.depthTo)
-            print("Wet / Dry: " + wbimage.wetDry)
+            #print("Depth From: " + wbimage.depthFrom)
+            #print("Depth To: " + wbimage.depthTo)
+            #print("Wet / Dry: " + wbimage.wetDry)
 
             #set fields on form
             self.InputPhotoName.set("Input photo file name: " + image_file)  # set the label at the top of the form

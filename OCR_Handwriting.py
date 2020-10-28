@@ -35,6 +35,8 @@ class WBImage:
 	#variables for displaying on output form:
 	depthFrom: str #depth from found for the current image, in string format
 	depthTo: str #depth to found for the current image, in string format
+	depthFromP: float #corresponding probability [0:1]
+	depthToP: float #corresponding probability [0:1]
 	wetDry: str #string, "WET" if "WET" found, or "DRY" if "DRY" found
 	DevelopMode: bool  # if True, will show stepwise images through code more interactively, needed for training
 	# default false for general use of program
@@ -402,6 +404,8 @@ class WBImage:
 							k.MaxProbWordInd[n] = wInd  # corresponding word index
 							break
 		# show image of keyWords picked out, and print probabilities correct
+		print("-----")
+		print("KEYWORD SEARCH SUMMARY:")
 		self.imageOutAnno = self.image.copy()
 		for ii, k in enumerate(self.keyWordList):
 			for n in range(len(k.MaxProb)):
@@ -476,10 +480,10 @@ class WBImage:
 			yMax = [0,0] #highest and second highest y_result
 			for ind, (word, y) in enumerate(zip(self.wordList, y_result)):
 				#code to output word characters and corresponding number likelihood
-				#if self.DevelopMode:
-				output = "".join(word.wordCharList)
-				output += ": {:.2f}".format(y[1])
-				print(output)
+				if self.DevelopMode:
+					output = "".join(word.wordCharList)
+					output += ": {:.2f}".format(y[1])
+					print(output)
 
 				#check if most or second most likely, store if so
 				#for n in range(len(yMaxInd)):
@@ -495,7 +499,7 @@ class WBImage:
 			#output results to image
 			for n, p in zip(yMaxInd, yMax): #loop through 2 number words found...
 				currWord = ""
-				if p > 0.35: #only output if prob of word being number > 35%
+				if p > 0.15: #only output if prob of word being number > 35%
 					(x, y, w, h) = self.wordList[n].dims
 					cv2.rectangle(self.imageOutAnno, (x, y), (x + w, y + h), (255, 0, 255), 2)
 					# check for punctuation, add to image if it exists
@@ -522,10 +526,20 @@ class WBImage:
 			#regardless of probability, assign number words to from / to respectively, store in class variables
 			if self.wordList[yMaxInd[0]].dims[0] < self.wordList[yMaxInd[1]].dims[0]: #compare x values, depth from comes first
 				self.depthFrom = wordNumStr[0]
+				self.depthFromP = yMax[0]
 				self.depthTo = wordNumStr[1]
+				self.depthToP = yMax[1]
 			else:
 				self.depthFrom = wordNumStr[1]
+				self.depthFromP = yMax[1]
 				self.depthTo = wordNumStr[0]
+				self.depthToP = yMax[0]
+
+			print("-----")
+			print("PREDICTION SUMMARY:")
+			print("Depth From: " + self.depthFrom + " (P={:.0f}%)".format(self.depthFromP*100))
+			print("Depth To: " + self.depthTo + " (P={:.0f}%)".format(self.depthToP*100))
+			print("Wet / Dry: " + self.wetDry)
 
 			if self.DevelopMode:  # only show cv2 image if in develop mode
 				imageS = fn.ResizeImage(self.imageOutAnno, 800, 800)
