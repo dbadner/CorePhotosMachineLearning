@@ -247,7 +247,7 @@ class WBImage:
 		avgH /= len(word.charList)
 		avgW /= len(word.charList)
 		if len(word.charList) > 1:
-			avgSpac /= 1
+			avgSpac /= len(word.charList) - 1
 
 		word.avgCharSpac = avgSpac
 		word.avgCharH = avgH
