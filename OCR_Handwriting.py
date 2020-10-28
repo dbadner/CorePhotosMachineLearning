@@ -608,8 +608,8 @@ class WBImage:
 		yMinDif: float = tH
 		hMinDif: float = tW**2 + tH**2 #minimum hypoteneuse
 		for k, keyWord in enumerate(self.keyWordList):
-			if k >= 3 or "".join(keyWord.Chars)=="TO": break  # exit loop if past 'depth' keyword, hardcoded
-			#added break to above statement if keyword is "TO"; we are now ignoring this
+			if "".join(keyWord.Chars)=="TO": continue #skip if "TO" keyword, no longer using
+			if k >= 3: break  # exit loop if past 'depth' keyword, hardcoded
 			for n, p in zip(keyWord.MaxProbWordInd, keyWord.MaxProb):
 				if p < keywordProbMin: continue #ignore keyword if < min cutoff, currently 40%
 				(xK, yK, wK, hK) = self.wordList[n].dims
