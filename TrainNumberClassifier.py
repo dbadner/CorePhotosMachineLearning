@@ -1,10 +1,10 @@
-import csv
+#import csv
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn import svm
-from sklearn import linear_model
+#from sklearn import linear_model
 from sklearn import metrics
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.preprocessing import StandardScaler
@@ -20,7 +20,7 @@ for i, row in enumerate(open(datasetPath)):
     row = row.split(",")
     # print(row)
     label = int(row[0])
-    datarow = np.array([x for x in row[1:6]], dtype="float32")
+    datarow = np.array([x for x in row[1:7]], dtype="float32")
 
     # print(datarow)
 
@@ -38,14 +38,13 @@ data = sc.fit_transform(data)
 #	print('>%d, min=%.3f, max=%.3f, avg=%.3f' % (i, data[:, i].min(), data[:, i].max(), data[:, i].mean()))
 
 # Split dataset into training set and test set
-X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.3,
-                                                    random_state=3)  # 70% training and 30% test
-
+X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.01,
+                                                    random_state=52)  # 80% training and 20% test
 
 
 #SVM Polynomial model ###USED
 #Create a svm Classifier
-clf = svm.SVC(kernel='poly', degree=4, class_weight='balanced', gamma='scale', random_state=15, probability=True)
+clf = svm.SVC(kernel='poly', degree=4, class_weight='balanced', gamma='scale', random_state=31, probability=True)
 
 #Train the model using the training sets
 clf.fit(X_train, y_train)
@@ -56,42 +55,55 @@ y_pred = clf.predict(X_test)
 y_trainpred_prob = clf.predict_proba(X_train)
 y_pred_prob = clf.predict_proba(X_test)
 
+
+
 print("TRAIN")
 
 # Model Accuracy: how often is the classifier correct?
-print("Accuracy:",metrics.accuracy_score(y_train, y_trainpred))
+print("Accuracy:{:.2f}".format(metrics.accuracy_score(y_train, y_trainpred)))
 
 # Model Precision: # correctly predicted positives / # predicted as positive
-print("Precision:",metrics.precision_score(y_train, y_trainpred))
+print("Precision:{:.2f}".format(metrics.precision_score(y_train, y_trainpred)))
 
 # Model Recall: # correctly predicted positives / # actual positives
-print("Recall:",metrics.recall_score(y_train, y_trainpred))
+print("Recall:{:.2f}".format(metrics.recall_score(y_train, y_trainpred)))
 
 # F1 Score F1 = 2 * (precision * recall) / (precision + recall)
-print("F1 Score:",metrics.f1_score(y_train, y_trainpred))
+print("F1 Score:{:.2f}".format(metrics.f1_score(y_train, y_trainpred)))
 
 print("TEST")
 
 # Model Accuracy: how often is the classifier correct?
-print("Accuracy:", metrics.accuracy_score(y_test, y_pred))
+print("Accuracy:{:.2f}".format(metrics.accuracy_score(y_test, y_pred)))
 
 # Model Precision: # correctly predicted positives / # predicted as positive
-print("Precision:", metrics.precision_score(y_test, y_pred))
+print("Precision:{:.2f}".format(metrics.precision_score(y_test, y_pred)))
 
 # Model Recall: # correctly predicted positives / # actual positives
-print("Recall:", metrics.recall_score(y_test, y_pred))
+print("Recall:{:.2f}".format(metrics.recall_score(y_test, y_pred)))
 
 # F1 Score F1 = 2 * (precision * recall) / (precision + recall)
-print("F1 Score:", metrics.f1_score(y_test, y_pred))
+print("F1 Score:{:.2f}".format(metrics.f1_score(y_test, y_pred)))
 
 score = clf.score(X_test, y_test)
 cm = metrics.confusion_matrix(y_test, y_pred)
 
-print(confusion_matrix(y_test,y_pred))
-print(classification_report(y_test,y_pred))
+#print(confusion_matrix(y_test,y_pred))
+#print(classification_report(y_test,y_pred))
 
 plt.figure(figsize=(9,9))
 sns.heatmap(cm, annot=True, fmt=".3f", linewidths=.5, square = True, cmap = 'Blues_r');
+plt.ylabel('Actual label');
+plt.xlabel('Predicted label');
+all_sample_title = 'Accuracy Score: {:.2f}'.format(score)
+plt.title(all_sample_title, size = 15);
+plt.show()
+
+#also show confusion matrix for training set
+cm2 = metrics.confusion_matrix(y_train, y_trainpred)
+
+plt.figure(figsize=(9,9))
+sns.heatmap(cm2, annot=True, fmt=".3f", linewidths=.5, square = True, cmap = 'Blues_r');
 plt.ylabel('Actual label');
 plt.xlabel('Predicted label');
 all_sample_title = 'Accuracy Score: {:.2f}'.format(score)

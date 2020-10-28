@@ -11,7 +11,7 @@ from tensorflow.keras.models import load_model
 from imutils.contours import sort_contours
 from pickle import load
 import numpy as np
-import argparse
+#import argparse
 import imutils
 import cv2
 import h5py
@@ -46,8 +46,8 @@ class WBImage:
 	# KeyWordList: list  # list of char lists defining keywords
 
 	def __init__(self, inputdir: str):
-		self.DevelopMode = True #SET TO TRUE FOR DEBUGGING
-		self.TrainingMode = False #SET TRUE FOR BUILDING TRAINING SET
+		self.DevelopMode = False #SET TO TRUE FOR DEBUGGING
+		self.TrainingMode = False #SET TRUE FOR BUILDING TRAINING SET, ALNOG WITH DEVELOP MODE ABOVE
 		self.InputDir = inputdir
 		self.Num_AZ_Model = load_model('number_az_model.h5')
 		self.Num_Model = load_model('mnist_number_model.h5')
@@ -143,7 +143,7 @@ class WBImage:
 				padded = np.expand_dims(padded, axis=-1)
 				# check if small character, unlikely text (could be punctuation):
 				smallCharFilt = False
-				if h < 22:
+				if h < 25:
 					smallCharFilt = True
 				self.charList.append(Character(padded, (x, y, w, h), False, smallCharFilt,
 										  False))  # update our list of characters that will be OCR'd
@@ -468,66 +468,69 @@ class WBImage:
 		if self.TrainingMode and inpBool: #write to training set csv if trainingmode enabled and user specified 'y'
 			self.SaveUpdateTrainingSetCSV('depth_train_dataset.csv', image_file, dataList, labelList)
 
-		y_result = self.RunWordNumSVMModel(dataList) #output from 1 to 0 representing likelihood of being a number
-		yMaxInd = [-1,-1] #word index corresponding to highest and second highest y_result
-		yMax = [0,0] #highest and second highest y_result
-		for ind, (word, y) in enumerate(zip(self.wordList, y_result)):
-			#code to output word characters and corresponding number likelihood
-			if self.DevelopMode:
+		#Don't run SVM if in training mode, temporarily
+		if not self.TrainingMode:
+
+			y_result = self.RunWordNumSVMModel(dataList) #output from 1 to 0 representing likelihood of being a number
+			yMaxInd = [-1,-1] #word index corresponding to highest and second highest y_result
+			yMax = [0,0] #highest and second highest y_result
+			for ind, (word, y) in enumerate(zip(self.wordList, y_result)):
+				#code to output word characters and corresponding number likelihood
+				#if self.DevelopMode:
 				output = "".join(word.wordCharList)
 				output += ": {:.2f}".format(y[1])
 				print(output)
 
-			#check if most or second most likely, store if so
-			#for n in range(len(yMaxInd)):
-			if y[1] > yMax[0]:
-				yMax[1] = yMax[0]
-				yMaxInd[1] = yMaxInd[0]
-				yMax[0] = y[1]
-				yMaxInd[0] = ind
-			elif y[1] > yMax[1]:
-				yMax[1] = y[1]
-				yMaxInd[1] = ind
-		wordNumStr = []  # list of str
-		#output results to image
-		for n, p in zip(yMaxInd, yMax): #loop through 2 number words found...
-			currWord = ""
-			if p > 0.35: #only output if prob of word being number > 35%
-				(x, y, w, h) = self.wordList[n].dims
-				cv2.rectangle(self.imageOutAnno, (x, y), (x + w, y + h), (255, 0, 255), 2)
-				# check for punctuation, add to image if it exists
-				xP = yP = wP = hP = -1 #initialize punctuation coordinates to null val
-				punct = False
-				if punctIDList[n] > -1:  # -1 is null val for no punctuation
-					(xP, yP, wP, hP) = self.charList[punctIDList[n]].Dims
-					cv2.putText(self.imageOutAnno, ".", (xP - 10, yP - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 0, 0), 2)
-					punct = True
-				for c in self.wordList[n].charList:  # number characters,
-					#output box to image around character
-					(xC, yC, wC, hC) = self.charList[c].Dims
-					cv2.rectangle(self.imageOutAnno, (xC, yC), (xC + wC, yC + hC), (0, 0, 255), 2)
-					# pull labels from numeric neural network
-					i = np.argmax(predsNum[c])
-					prob = predsNum[i]
-					label = self.LabelNames[i]
-					cv2.putText(self.imageOutAnno, label, (xC - 10, yC - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 0, 0), 2)
-					if punct and (xP + wP/2) < (xC + wC/2): #there is punctuation, and if it fits before current character
-						currWord += "."
-						punct = False
-					currWord += label
-			wordNumStr.append(currWord)
-		#regardless of probability, assign number words to from / to respectively, store in class variables
-		if self.wordList[yMaxInd[0]].dims[0] < self.wordList[yMaxInd[1]].dims[0]: #compare x values, depth from comes first
-			self.depthFrom = wordNumStr[0]
-			self.depthTo = wordNumStr[1]
-		else:
-			self.depthFrom = wordNumStr[1]
-			self.depthTo = wordNumStr[0]
+				#check if most or second most likely, store if so
+				#for n in range(len(yMaxInd)):
+				if y[1] > yMax[0]:
+					yMax[1] = yMax[0]
+					yMaxInd[1] = yMaxInd[0]
+					yMax[0] = y[1]
+					yMaxInd[0] = ind
+				elif y[1] > yMax[1]:
+					yMax[1] = y[1]
+					yMaxInd[1] = ind
+			wordNumStr = []  # list of str
+			#output results to image
+			for n, p in zip(yMaxInd, yMax): #loop through 2 number words found...
+				currWord = ""
+				if p > 0.35: #only output if prob of word being number > 35%
+					(x, y, w, h) = self.wordList[n].dims
+					cv2.rectangle(self.imageOutAnno, (x, y), (x + w, y + h), (255, 0, 255), 2)
+					# check for punctuation, add to image if it exists
+					xP = yP = wP = hP = -1 #initialize punctuation coordinates to null val
+					punct = False
+					if punctIDList[n] > -1:  # -1 is null val for no punctuation
+						(xP, yP, wP, hP) = self.charList[punctIDList[n]].Dims
+						cv2.putText(self.imageOutAnno, ".", (xP - 10, yP - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 0, 0), 2)
+						punct = True
+					for c in self.wordList[n].charList:  # number characters,
+						#output box to image around character
+						(xC, yC, wC, hC) = self.charList[c].Dims
+						cv2.rectangle(self.imageOutAnno, (xC, yC), (xC + wC, yC + hC), (0, 0, 255), 2)
+						# pull labels from numeric neural network
+						i = np.argmax(predsNum[c])
+						prob = predsNum[i]
+						label = self.LabelNames[i]
+						cv2.putText(self.imageOutAnno, label, (xC - 10, yC - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 0, 0), 2)
+						if punct and (xP + wP/2) < (xC + wC/2): #there is punctuation, and if it fits before current character
+							currWord += "."
+							punct = False
+						currWord += label
+				wordNumStr.append(currWord)
+			#regardless of probability, assign number words to from / to respectively, store in class variables
+			if self.wordList[yMaxInd[0]].dims[0] < self.wordList[yMaxInd[1]].dims[0]: #compare x values, depth from comes first
+				self.depthFrom = wordNumStr[0]
+				self.depthTo = wordNumStr[1]
+			else:
+				self.depthFrom = wordNumStr[1]
+				self.depthTo = wordNumStr[0]
 
-		if self.DevelopMode:  # only show cv2 image if in develop mode
-			imageS = fn.ResizeImage(self.imageOutAnno, 800, 800)
-			cv2.imshow("Final Image", imageS)
-			cv2.waitKey(0)
+			if self.DevelopMode:  # only show cv2 image if in develop mode
+				imageS = fn.ResizeImage(self.imageOutAnno, 800, 800)
+				cv2.imshow("Final Image", imageS)
+				cv2.waitKey(0)
 
 
 	def BuildFeatureMatrix(self, labeldata: bool, tH, tW, image, keywordProbMin):
@@ -539,12 +542,20 @@ class WBImage:
 		# y_dist - y distance from nearest keyword, scaled to [-1,1] by bounds of whiteboard image
 		# p_numb - average likelihood that characters in word are numeric [0,1]
 		# punct - whether or not the word contains a '.' punctuation character, [0=False,1=True]
-		# num_chars - #number of characters scaled ###number of characters, [0,1], 1 if 3-6 characters, 0 otherwise
-		featnames = ["x_dist", "y_dist", "prob_numb", "punct", "num_chars"]
-		n_feat = 5
+		# num_chars - #number of characters scaled
+		# height - average height of the word
+		featnames = ["x_dist", "y_dist", "prob_numb", "punct", "num_chars", "height"]
 		data = [] #np.zeros(len(wordList), n_feat)
 		labels = [] #1 for depth value word, 0 for not. only relevant if labeldata = true, otherwise blank
 		punctIDList = [] #character ID of punction for each word, -1 if no punctuation
+
+		#find maximum avgCharHt
+		maxHt: float = 0.0
+		for word in self.wordList:
+			ht = word.avgCharH
+			if ht > maxHt:
+				maxHt = ht
+
 		# obtain feature vector for each word
 		for n, word in enumerate(self.wordList):
 
@@ -560,16 +571,13 @@ class WBImage:
 			p_numb = word.probNum
 			punct, punctID = self.FindPunctuation(word) #punct is true or false, and if true, return charID for punctuation
 			punctIDList.append(punctID)
-			num_chars: float = len(word.charList) / 10 #scale / 10, assume 10 is max reasonable # of characters
-			"""
-			if len(word.charList) <= 6 and len(word.charList) >= 3:
-				num_chars = 1
-			else:
-				num_chars = 0
-			"""
-			datarow = np.array([x_dist, y_dist, p_numb, punct, num_chars], dtype="float32")
+			num_chars: float = self.FindNumCharsScaled(word)
+			height = self.FindRelHeight(word, maxHt)
+
+			datarow = np.array([x_dist, y_dist, p_numb, punct, num_chars, height], dtype="float32")
 			#datarow = np.zeros(1, n_feat, dtype="float32")
 			data.append(datarow)
+
 			if labeldata: #interactive user data labelling
 				#first, print vector to screen:
 				output = ("WORD #{}: ".format(n))
@@ -595,8 +603,19 @@ class WBImage:
 						inputval = int(inp)
 				labels.append(inputval)
 
-
 		return data, labels, punctIDList
+
+	def FindRelHeight(self, word, maxHt):
+		#function returns the avg height of the word divided by the avg height of the tallest word
+		return word.avgCharH / maxHt
+
+	def FindNumCharsScaled(self, word):
+		#function returns number of words from word, scaled such that 3 - 6 characters are treated the same
+		#optimized for numbers with two decimal places
+		num_chars = len(word.charList)
+		if num_chars > 3:
+			num_chars -= min(3, num_chars-3)
+		return num_chars
 
 	def FindClosestKeyword(self, word, tH, tW, keywordProbMin):
 		# finds and returns x and y distance to closest keyword
@@ -635,7 +654,7 @@ class WBImage:
 		fndPunct: bool = False
 		punctID: int = -1
 		for ind, char in enumerate(self.charList):
-			if char.InWord == True or char.SmallFilt == False: #character is not in a word, and has been flatted as a small character, possible punctuation
+			if char.InWord == True or char.SmallFilt == False: #character is not in a word, and has been flagged as a small character, possible punctuation
 				continue
 			(x, y, w, h) = char.Dims
 			# check within lower quarter of word, expanded downward by 1/4 of word height
@@ -652,8 +671,8 @@ class WBImage:
 		# function checks if an existing training set exists, and builds a new one if not
 		# structure of CSV:
 		# row 0 = labels
-		# rows 1 - 5 = data
-		# row 6 = image file name
+		# rows 1 - 6 = data
+		# row 7 = image file name
 		# check if file exists:
 		exists = os.path.exists(fname)
 		writemode = 'w'
@@ -661,7 +680,7 @@ class WBImage:
 		with open(fname, writemode) as csvfile:
 			filewriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL, lineterminator = '\n')
 			if not exists:
-				filewriter.writerow(["labels", "x_dist", "y_dist", "prob_numb", "punct", "num_chars", "filename"]) #header row first
+				filewriter.writerow(["labels", "x_dist", "y_dist", "prob_numb", "punct", "num_chars", "height", "filename"]) #header row first
 			for dataLine, labelLine in zip(dataList, labelList):
 				outputlist = []
 				outputlist.append(str(labelLine))
