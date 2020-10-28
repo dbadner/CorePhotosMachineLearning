@@ -1,14 +1,15 @@
 import Detectron2WBEval as wb
-import OCR_Handwriting as hw
-#import tesseract_wordboxes as tesswb
-#from detectron2.structures import Instances
+import SkipDetectron as sd
 import FormBrowse as bws
 import FormUI as ui
 import warnings
 import os
 import ctypes
 
+
 def main():
+    skipDetectron = True
+
 
     warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -26,10 +27,19 @@ def main():
     outputNamedDir = inputdir + "\\" + "Output_Named_Images"
     if not os.path.exists(outputNamedDir): os.makedirs(outputNamedDir)
 
-    print("Reading in images and searching for white boards...")
-    objWB = wb.FindWhiteBoards(inputdir, outputWBDir, outputWBAnnoDir)
-    wbOutputList, errorCount = objWB.RunModel(True, True)
-    #wbOutputList [image filename, image filepath, whiteboard output image filepath, annotated output image filepath]
+
+    wbOutputList = []
+    errorCount = 0
+    if not skipDetectron:
+        xxx=1
+        print("Reading in images and searching for white boards...")
+        objWB = wb.FindWhiteBoards(inputdir, outputWBDir, outputWBAnnoDir)
+        wbOutputList, errorCount = objWB.RunModel(True, True)
+        #wbOutputList [image filename, image filepath, whiteboard output image filepath, annotated output image filepath]
+
+    else:
+        #use what is already in the directory, for debugging
+        wbOutputList, errorCount = sd.skip_detectron(inputdir, outputWBDir, outputWBAnnoDir)
 
     if errorCount > 0:
         ctypes.windll.user32.MessageBoxW(0, "Warning: white board not found in {} image file(s). Refer to output in terminal for details.".format(errorCount), "Warning", 0)

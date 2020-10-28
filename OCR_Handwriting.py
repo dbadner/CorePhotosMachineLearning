@@ -46,7 +46,7 @@ class WBImage:
 	# KeyWordList: list  # list of char lists defining keywords
 
 	def __init__(self, inputdir: str):
-		self.DevelopMode = False #SET TO TRUE FOR DEBUGGING / TRAINING NEW DATA
+		self.DevelopMode = True #SET TO TRUE FOR DEBUGGING / TRAINING NEW DATA
 		self.InputDir = inputdir
 		self.Num_AZ_Model = load_model('number_az_model.h5')
 		self.Num_Model = load_model('mnist_number_model.h5')
@@ -190,6 +190,25 @@ class WBImage:
 					char.InWord = True
 				# wordList.append((char[1],[i])) #add dimensions of first character and charID to the wordlist
 
+		#now loop back through words and reassess first character vs second character spacing (skipped before)
+		nnn = 0
+		yyy = 1
+		for i, word in enumerate(self.wordList):
+			if len(word.charList) > 1:
+				char1 = self.charList[word.charList[0]]
+				x1 = char1.Dims[0] + char1.Dims[2]
+				char2 = self.charList[word.charList[1]]
+				x2 = char2.Dims[0]
+				if not self.CheckMeanSpacing(x1, x2, word): #remove first character if true, spacing too large
+					self.charList[word.charList[0]].InWord = False
+					word.charList.remove(word.charList[0]) #remove the first character
+
+					self.UpdateWordVals(word)
+					yyy+=1
+				else:
+					nnn += 1
+
+
 		# final loop to throw out words that only have one character
 		for i in range(len(self.wordList) - 1, -1, -1):
 			words = self.wordList[i]
@@ -202,6 +221,39 @@ class WBImage:
 		# del chars[removeList[i]]
 
 		#return charList, wordList
+	def UpdateWordVals(self, word):
+		#function iterates through word parameters and updates values
+
+		(xW, yW, wW, hW) = self.charList[word.charList[0]].Dims #initialize word values to first character values
+		#xW = self.charList[word.charList[0]].Dims[0]
+		wW = self.charList[word.charList[len(word.charList)-1]].Dims[2] + \
+			 self.charList[word.charList[len(word.charList)-1]].Dims[0] - xW
+
+		avgSpac = 0
+		avgH = 0
+		avgW = 0
+		for n, charInd in enumerate(word.charList):
+			(x, y, w, h) = self.charList[charInd].Dims
+			yWN = min(y, yW)
+			hWN = max(y + h, yW + hW) - yWN
+			yW = yWN
+			hW = hWN
+			avgH += h
+			avgW += w
+			if n > 0: #skip the first iteration, no previous character
+				(xP, yP, wP, hP) = self.charList[word.charList[n-1]].Dims #previous character dims
+				avgSpac += x - (xP + wP)
+
+		avgH /= len(word.charList)
+		avgW /= len(word.charList)
+		if len(word.charList) > 1:
+			avgSpac /= 1
+
+		word.avgCharSpac = avgSpac
+		word.avgCharH = avgH
+		word.avgCharW = avgW
+
+		word.dims = (xW, yW, wW, hW)
 
 	def CharChecks(self, i, char, prevChar, j, word):
 		# function runs a series of checks to check whether character 'char' is in word 'word', returns true is so, or false if not
@@ -213,7 +265,7 @@ class WBImage:
 		if xDif >= hW/1.2:  # compare to word height to check if close enough to word to be included (i.e. whitespace between)
 			return False
 		# check y-overlap against previous character in word (instead of fill word
-		if y > (yC + hC) or (y + h) < yC:  # need to also check amount of overlap
+		if y > (yC + hC) or (y + h) < yC:  # need to also check amount of y-overlap
 			return False
 		ovl = (min(y + h, yC + hC) - max(y, yC)) / (max(y + h, yC + hC) - min(y, yC))  # percentage overlap
 		if ovl <= 0.3:  # set 30% overlap threshold
@@ -221,12 +273,22 @@ class WBImage:
 		htRatio = h / hW
 		if htRatio > 2.5 or htRatio < 0.3:  # thresholds for height ratios
 			return False
-		if not (len(word.charList) <= 3 or (len(word.charList) > 2 and (max(xDif, 0) - word.avgCharSpac) / hW < .4)):
+		if not (len(word.charList) <= 3 or (len(word.charList) > 2 and self.CheckMeanSpacing(xW+wW, x, word))): #(max(xDif, 0) - word.avgCharSpac) / hW < .4)):
 			#check space between characters relative to mean space
 			return False
 		# final check - look for a change in average spacing between characters in a word
 		else:
 			return True
+
+	def CheckMeanSpacing(self, x1, x2, word):
+		#Function performs check of spacing between characters relative to mean spacing of characters in word
+		#Returns True if spacing criteria is okay, false is failed (i.e. too large spacing)
+		#variables: x2 - left of second character, x1 - right of first character, word = current word, cutoff is cutoff value
+		#hW = word.avgCharH #word.dims[4]
+		cutoff = 0.4
+		ret = (max(x2-x1, 0) - word.avgCharSpac) / word.avgCharH < cutoff
+		return ret
+
 
 	def CheckOverlap(self):
 		# check each character to make sure not overlapping with an another character
@@ -430,7 +492,7 @@ class WBImage:
 		#output results to image
 		for n, p in zip(yMaxInd, yMax): #loop through 2 number words found...
 			currWord = ""
-			if p > 0.5: #only output if prob of word being number > 50%
+			if p > 0.35: #only output if prob of word being number > 35%
 				(x, y, w, h) = self.wordList[n].dims
 				cv2.rectangle(self.imageOutAnno, (x, y), (x + w, y + h), (255, 0, 255), 2)
 				# check for punctuation, add to image if it exists
