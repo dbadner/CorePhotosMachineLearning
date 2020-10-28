@@ -46,7 +46,8 @@ class WBImage:
 	# KeyWordList: list  # list of char lists defining keywords
 
 	def __init__(self, inputdir: str):
-		self.DevelopMode = True #SET TO TRUE FOR DEBUGGING / TRAINING NEW DATA
+		self.DevelopMode = True #SET TO TRUE FOR DEBUGGING
+		self.TrainingMode = False #SET TRUE FOR BUILDING TRAINING SET
 		self.InputDir = inputdir
 		self.Num_AZ_Model = load_model('number_az_model.h5')
 		self.Num_Model = load_model('mnist_number_model.h5')
@@ -204,9 +205,6 @@ class WBImage:
 					word.charList.remove(word.charList[0]) #remove the first character
 
 					self.UpdateWordVals(word)
-					yyy+=1
-				else:
-					nnn += 1
 
 
 		# final loop to throw out words that only have one character
@@ -440,7 +438,7 @@ class WBImage:
 			cv2.waitKey(0)
 
 		inpBool = False
-		if self.DevelopMode:  # only show cv2 image if in develop mode
+		if self.TrainingMode:  # only write cv2 image if in training mode
 			# For training mode: Training Set by saving photos to folders
 			valid = False
 			inp: str
@@ -465,7 +463,7 @@ class WBImage:
 		#punctIDList = []
 		(tH, tW) = self.gray.shape
 		dataList, labelList, punctIDList = self.BuildFeatureMatrix(inpBool, tH, tW, self.imageOutAnno, keywordProbMin)
-		if inpBool:
+		if self.TrainingMode and inpBool: #write to training set csv if trainingmode enabled and user specified 'y'
 			self.SaveUpdateTrainingSetCSV('depth_train_dataset.csv', image_file, dataList, labelList)
 
 		y_result = self.RunWordNumSVMModel(dataList) #output from 1 to 0 representing likelihood of being a number

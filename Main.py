@@ -8,7 +8,7 @@ import ctypes
 
 
 def main():
-    skipDetectron = True
+    skipDetectron = False
 
 
     warnings.simplefilter(action='ignore', category=FutureWarning)
