@@ -2,13 +2,14 @@ import Detectron2WBEval as wb
 import SkipDetectron as sd
 import FormBrowse as bws
 import FormUI as ui
+import OCR_Root as ocr
 import warnings
 import os
 import ctypes
 
 
 def main():
-    skipDetectron = True #skip detectron whiteboard recognition, default = false, for development
+    skipDetectron = False #skip detectron whiteboard recognition, default = false, for development
 
 
     warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -44,8 +45,11 @@ def main():
     if errorCount > 0:
         ctypes.windll.user32.MessageBoxW(0, "Warning: white board not found in {} image file(s). Refer to output in terminal for details.".format(errorCount), "Warning", 0)
 
-    print("Stepping through whiteboards interactively and classifying text...")
-    objUI = ui.UIForm(outputWBDir, outputNamedDir, wbOutputList)
+    print("Classifying text in photos...")
+    cfOutput = ocr.ocrRoot(wbOutputList, outputWBDir, outputAnnoDir)
+
+    print("Classification complete. Stepping through results interactively...")
+    objUI = ui.UIForm(outputWBDir, outputNamedDir, cfOutput)
 
 
     #objTessWB = tesswb.TessFindWords(inputdir)

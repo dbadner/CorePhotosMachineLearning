@@ -18,7 +18,11 @@ class UIForm:
     #OutputPhotoFileName: str #output photo file name
     InputDir: str  # whiteboard image input directory (output directory of detectron)
     OutputDir: str  # final image output directory
-    WBOutputList: list # list of tuples of (image filename, image filepath (including filename),
+    CFOutputList: list #list of tuples output from the OCR classification script that is returned from this function and fed
+    #into the user form
+    #tuple parameters: [image filename, image filepath, whiteboard output image filepath, annotated output image filepath,
+    #annotated whiteboard output image filepath, classified depthFrom, classified depthTo, classified wet/dry,
+    #depthFrom probability as %, depthTo probability as %
     # whiteboard output image filepath, # annotated output image filepath)
     OutputListInd: int
     imgTK: object
@@ -26,11 +30,11 @@ class UIForm:
 
     #shows User Interface form
     #ImagePath: str#tk.StringVar
-    def __init__(self, inputdir, outputdir, wboutputlist):
+    def __init__(self, inputdir, outputdir, cfoutputList):
         #initialize variables related to image input/output
         self.InputDir = inputdir
         self.OutputDir = outputdir
-        self.WBOutputList = wboutputlist
+        self.CFOutputList = cfoutputList
         self.OutputListInd = 0 #initialize index of the WBOutputList to start at (will iterate through images interactively)
 
         self.window = Tk()
@@ -125,12 +129,15 @@ class UIForm:
         for txt, obj, W, S in self.stringVarList:
             obj.trace_add('write', self.update_FName)
 
-        self.OCR(self.WBOutputList[0])  # call OCR method to read in first whiteboard image
+        self.OCR(self.CFOutputList[0])  # call OCR method to read in first whiteboard image
 
         self.window.mainloop()
 
-    def OCR(self, wb):
-        # wb is a tuple of [image filename, image filepath, whiteboard output image filepath, annotated output image filepath]
+    def OCR(self, cfobj):
+
+
+        #the following is now done from OCR_Root prior to loading FormUI
+        """
         image_file = wb[0]  # retrieve the whiteboard image file name
 
         image_path = wb[2]  # retrieve the whiteboard image path
@@ -152,24 +159,29 @@ class UIForm:
             #print("Depth From: " + wbimage.depthFrom)
             #print("Depth To: " + wbimage.depthTo)
             #print("Wet / Dry: " + wbimage.wetDry)
+            """
+        #set fields on form
+        self.InputPhotoName.set("Input photo file name: " + cfobj.ImgFileName)  # set the label at the top of the form
+        self.DepthFromstr.set(self.AddLeadingZeros(cfobj.DepthFrom))
+        self.DepthTostr.set(self.AddLeadingZeros(cfobj.DepthTo))
+        self.WetDrystr.set(cfobj.WetDry)
 
-            #set fields on form
-            self.InputPhotoName.set("Input photo file name: " + image_file)  # set the label at the top of the form
-            self.DepthFromstr.set(self.AddLeadingZeros(wbimage.depthFrom))
-            self.DepthTostr.set(self.AddLeadingZeros(wbimage.depthTo))
-            self.WetDrystr.set(wbimage.wetDry)
+        #read in appropriate images
+        #first, read in the annotated core photo as CV2, then resize and convert
 
-            #read in appropriate images
-            #first, read in the annotated core photo as CV2, then resize and convert
-            image = cv2.imread(self.WBOutputList[self.OutputListInd][3])
-            self.imgTK = self.imageIntoCanvas(image)
-            self.canvas1.create_image(0, 0, anchor=NW, image=self.imgTK)
+        #image = cv2.imread(self.WBOutputList[self.OutputListInd][3])
+        image = cv2.imread(cfobj.ImgWBAnnoFilePath)
+        self.imgTK = self.imageIntoCanvas(image)
+        self.canvas1.create_image(0, 0, anchor=NW, image=self.imgTK)
 
-            #next, read in whiteboard image
-            #image2 = cv2.imread(self.WBOutputList[self.OutputListInd][2])
-            #image2 = cv2.imread(wbimage.imageOutAnno)
-            self.imgTK2 = self.imageIntoCanvas(wbimage.imageOutAnno)
-            self.canvas2.create_image(0, 0, anchor=NW, image=self.imgTK2)
+        #next, read in whiteboard image
+        #image2 = cv2.imread(self.WBOutputList[self.OutputListInd][2])
+        #image2 = cv2.imread(wbimage.imageOutAnno)
+
+
+        image2 = cv2.imread(cfobj.ImgAnnoFilePath)
+        self.imgTK2 = self.imageIntoCanvas(image2)
+        self.canvas2.create_image(0, 0, anchor=NW, image=self.imgTK2)
 
     def AddLeadingZeros(self, strNum: str):
         #function adds leading zeros to string of numbers if < 4 x 0s
@@ -213,13 +225,13 @@ class UIForm:
         #self.Result = 0
         #self.OutputPhotoFileName = ""
         #save the image as a copy in the output directory
-        temp, suffix = os.path.splitext(self.WBOutputList[self.OutputListInd][0])
+        temp, suffix = os.path.splitext(self.CFOutputList[self.OutputListInd].ImgFileName)
         new_name = self.OutputDir + "\\" + self.FileNamestr.get() + suffix
         if os.path.exists(new_name):
             result = ctypes.windll.user32.MessageBoxW(0,"Warning: File "+ self.FileNamestr.get() + suffix + " already exists" +
                     " in output directory. Press OK to overwrite or Cancel to rename.", "Warning", 1)
             if result == 2: return #Cancel
-        shutil.copy(self.WBOutputList[self.OutputListInd][1], new_name)
+        shutil.copy(self.CFOutputList[self.OutputListInd].ImgFilePath, new_name)
         self.reset_fields()
         self.next_photo()
 
@@ -239,8 +251,8 @@ class UIForm:
 
     def next_photo(self):
         self.OutputListInd += 1
-        if self.OutputListInd < len(self.WBOutputList):
-            self.OCR(self.WBOutputList[self.OutputListInd]) #process the next image
+        if self.OutputListInd < len(self.CFOutputList):
+            self.OCR(self.CFOutputList[self.OutputListInd]) #process the next image
         else: # all photos in directory complete, exit
             ctypes.windll.user32.MessageBoxW(0,"All photos in specified folder location complete. " +
                                              "Press OK to exit the program. ","Notice", 0)

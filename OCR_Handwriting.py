@@ -17,6 +17,7 @@ import cv2
 import h5py
 import csv
 import Functions as fn
+import re
 
 
 
@@ -38,6 +39,7 @@ class WBImage:
 	depthFromP: float #corresponding probability [0:1]
 	depthToP: float #corresponding probability [0:1]
 	wetDry: str #string, "WET" if "WET" found, or "DRY" if "DRY" found
+	wetDryP: float #corresponding probability [0:1]
 	DevelopMode: bool  # if True, will show stepwise images through code more interactively, needed for training
 	# default false for general use of program
 
@@ -59,6 +61,7 @@ class WBImage:
 		self.depthFrom = ""
 		self.depthTo = ""
 		self.wetDry = ""
+		self.wetDryP = 0.0
 		#self.objFn = fn.Functions()
 
 	def BuildKeyWordList(self):
@@ -317,7 +320,7 @@ class WBImage:
 							break
 		return removeList
 
-	def RunModel(self, image_file):
+	def RunModel(self, image_file, outputAnnoDir):
 		# run the model to predict characters
 		#image_file is the filename
 
@@ -546,6 +549,12 @@ class WBImage:
 				cv2.imshow("Final Image", imageS)
 				cv2.waitKey(0)
 
+			#lastly, save the image in the Output_Anno folder
+			out_file_name: str = outputAnnoDir + '\\' + re.search(r"(.*)\.", image_file).group(0)[:-1]
+			out_file_name += "_WB_Cropped_Anno.png"
+			cv2.imwrite(out_file_name, self.imageOutAnno)
+
+			return out_file_name
 
 	def BuildFeatureMatrix(self, labeldata: bool, tH, tW, image, keywordProbMin):
 		# built feature matrix
