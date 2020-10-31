@@ -109,7 +109,9 @@ class UIForm:
             # ent.pack(side = RIGHT, expand = YES, fill = X)
         #add buttons
         B3 = ttk.Button(text="Use Previous Depths", command=self.ApplyPrevDepths)
-        B3.place(x = 100, y = 300)
+        B3.place(x = 235, y = 108)
+        B4 = ttk.Button(text="Use Previous Depth To as Depth From", command=self.ApplyPrevDepthTo)
+        B4.place(x = 235, y = 108 + ydim[1])
 
         B = ttk.Button(text="Accept", command=self.accept_button) #.grid(row=9, column=0)
         B.place(x = xdim[0], y = btm + 70)
@@ -175,6 +177,11 @@ class UIForm:
         self.entryList[2].insert(0, self.PrevDepthFrom)
         self.entryList[3].insert(0, self.PrevDepthTo)
 
+    def ApplyPrevDepthTo(self):
+        #function applies previous depths to to current depth from when corresponding button is clicked
+        self.entryList[2].delete(0, 'end')
+        self.entryList[2].insert(0, self.PrevDepthTo)
+
     def AddLeadingZeros(self, strNum: str):
         #function adds leading zeros to string of numbers if < 4 x 0s
         l = len(strNum)
@@ -226,8 +233,8 @@ class UIForm:
             if result == 2: return #Cancel
         shutil.copy(self.CFOutputList[self.OutputListInd].ImgFilePath, new_name)
         #save depth from and depth to into class variables
-        self.PrevDepthFrom = self.DepthFromstr
-        self.PrevDepthTo = self.DepthTostr
+        self.PrevDepthFrom = self.DepthFromstr.get()
+        self.PrevDepthTo = self.DepthTostr.get()
 
         self.reset_fields()
         self.next_photo()
