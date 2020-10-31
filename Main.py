@@ -9,7 +9,7 @@ import ctypes
 
 
 def main():
-    skipDetectron = False #skip detectron whiteboard recognition, default = false, for development
+    skipDetectron = True #skip detectron whiteboard recognition, default = false, for development
 
 
     warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -32,7 +32,6 @@ def main():
     wbOutputList = []
     errorCount = 0
     if not skipDetectron:
-        xxx=1
         print("Reading in images and searching for white boards...")
         objWB = wb.FindWhiteBoards(inputdir, outputWBDir, outputWBAnnoDir)
         wbOutputList, errorCount = objWB.RunModel(True, True)

@@ -13,7 +13,7 @@ class frmBrowse:
         self.window = Tk()
         self.window.title("Machine Learning Core Photo Renaming App")
         self.window.iconphoto(False, tk.PhotoImage(file='input\\icon.png'))
-        #self.window.bind('<Return>', self.run_button)
+        self.window.bind('<Return>', self.enter_run)
         #window.geometry('1200x800')
         # window.configure(background="gray")
         self.ImagePath = tk.StringVar()
@@ -37,12 +37,17 @@ class frmBrowse:
         self.ImagePath.set(word)
 
     def run_button(self):
+
         if not os.path.exists(self.ImagePath.get()):
             errStr = "Error: Directory does not exist. Please select an existing directory containing your photographs."
             ctypes.windll.user32.MessageBoxW(0, errStr, "Error", 0)
         else:
             self.ImagePathStr = self.ImagePath.get()
             self.window.destroy()
+
+    def enter_run(self, obj):
+        # obj is the object returned when the enter key is pressed to enter this function. not used
+        self.run_button()
 
     #def run(self):
 #imagepath = tk.StringVar()

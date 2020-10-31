@@ -37,10 +37,15 @@ class UIForm:
         self.CFOutputList = cfoutputList
         self.OutputListInd = 0 #initialize index of the WBOutputList to start at (will iterate through images interactively)
 
+        #initialize variables that save previous depths
+        self.PrevDepthFrom = ""
+        self.PrevDepthTo = ""
+
         self.window = Tk()
         self.window.title("Machine Learning Core Photo Renaming App")
         self.window.iconphoto(False, tk.PhotoImage(file='input\\icon.png'))
         self.window.geometry('1100x600')
+        self.window.bind('<Return>', self.enter_run)
         #window.geometry('1200x800')
         # window.configure(background="gray")
         #declare stringvars corresponding to entries
@@ -78,11 +83,13 @@ class UIForm:
         self.photoNameLabel = ttk.Label(self.window, text="Input photo file name: ", textvariable=self.InputPhotoName)
         self.photoNameLabel.place(x=xdim[0], y=10)
 
+        self.entryList = [] #list of entry objects
         for n, (txt, obj, W, S) in enumerate(self.stringVarList):
             L = ttk.Label(self.window, text=txt)
             L.place(x=xdim[0], y= ydim[0] + (n*ydim[1]))
             E = ttk.Entry(width=W, textvariable=obj)
             E.place(x=xdim[1], y= ydim[0] + (n*ydim[1]))
+            self.entryList.append(E)
 
         btm = ydim[0] + (len(self.stringVarList) * ydim[1])
 
@@ -100,6 +107,9 @@ class UIForm:
         #for i in range(5):
             #ttk.Entry(width=20).grid(row=i + 1, column=2)
             # ent.pack(side = RIGHT, expand = YES, fill = X)
+        #add buttons
+        B3 = ttk.Button(text="Use Previous Depths", command=self.ApplyPrevDepths)
+        B3.place(x = 100, y = 300)
 
         B = ttk.Button(text="Accept", command=self.accept_button) #.grid(row=9, column=0)
         B.place(x = xdim[0], y = btm + 70)
@@ -135,31 +145,6 @@ class UIForm:
 
     def OCR(self, cfobj):
 
-
-        #the following is now done from OCR_Root prior to loading FormUI
-        """
-        image_file = wb[0]  # retrieve the whiteboard image file name
-
-        image_path = wb[2]  # retrieve the whiteboard image path
-        # load the input file from disk
-        # image_path = self.InputDir + '\\' + image_file
-        image = cv2.imread(image_path)
-        if type(image) is np.ndarray:  # only process if image file
-            # create new image object
-            print("Processing characters in image: " + image_file)
-            wbimage = hw.WBImage(self.InputDir)
-            wbimage.image = fn.ResizeImage(image, 2000, 2000)
-            wbimage.Preprocess()  # preprocess the image, convert to gray
-            # imageS = self.ResizeImage(gray, 800, 800)
-            # cv2.imshow("Keywords Image", imageS)
-            # cv2.waitKey(0)
-            wbimage.FindCharsWords()
-            # find characters and words, store as [image, (x, y, w, h)]
-            wbimage.RunModel(image_file)  # run the model to predict characters
-            #print("Depth From: " + wbimage.depthFrom)
-            #print("Depth To: " + wbimage.depthTo)
-            #print("Wet / Dry: " + wbimage.wetDry)
-            """
         #set fields on form
         self.InputPhotoName.set("Input photo file name: " + cfobj.ImgFileName)  # set the label at the top of the form
         self.DepthFromstr.set(self.AddLeadingZeros(cfobj.DepthFrom))
@@ -182,6 +167,13 @@ class UIForm:
         image2 = cv2.imread(cfobj.ImgAnnoFilePath)
         self.imgTK2 = self.imageIntoCanvas(image2)
         self.canvas2.create_image(0, 0, anchor=NW, image=self.imgTK2)
+
+    def ApplyPrevDepths(self):
+        #function applies previous depths from and to when corresponding button is clicked
+        self.entryList[2].delete(0, 'end')
+        self.entryList[3].delete(0, 'end')
+        self.entryList[2].insert(0, self.PrevDepthFrom)
+        self.entryList[3].insert(0, self.PrevDepthTo)
 
     def AddLeadingZeros(self, strNum: str):
         #function adds leading zeros to string of numbers if < 4 x 0s
@@ -221,6 +213,7 @@ class UIForm:
 
 
     def accept_button(self):
+
         #save current image, and then move onto the next image
         #self.Result = 0
         #self.OutputPhotoFileName = ""
@@ -232,8 +225,17 @@ class UIForm:
                     " in output directory. Press OK to overwrite or Cancel to rename.", "Warning", 1)
             if result == 2: return #Cancel
         shutil.copy(self.CFOutputList[self.OutputListInd].ImgFilePath, new_name)
+        #save depth from and depth to into class variables
+        self.PrevDepthFrom = self.DepthFromstr
+        self.PrevDepthTo = self.DepthTostr
+
         self.reset_fields()
         self.next_photo()
+
+    def enter_run(self, obj):
+        # obj is the object returned when the enter key is pressed to enter this function. not used
+
+        self.accept_button()
 
     def skip_button(self):
         # do not save current image, and then move onto the next image
@@ -258,37 +260,4 @@ class UIForm:
                                              "Press OK to exit the program. ","Notice", 0)
             self.window.destroy()
 
-
-#objUI = UIForm()
 # https://www.tutorialspoint.com/simple-registration-form-using-python-tkinter
-
-"""
-        self.BHIDstr = tk.StringVar()
-        self.PrefixTextstr = tk.StringVar()
-        self.DepthFromstr = tk.StringVar()
-        self.DepthTostr = tk.StringVar()
-        self.Unitsstr = tk.StringVar()
-        self.WetDrystr = tk.StringVar()
-        self.SuffixTextstr = tk.StringVar()
-        self.FileNamestr = tk.StringVar()
-
-        #labels
-        ttk.Label(self.window, text="Borehole ID:").grid(row=1, column=0)
-        ttk.Label(self.window, text="Prefix text:").grid(row=2, column=0)
-        ttk.Label(self.window, text="Depth from:").grid(row=3, column=0)
-        ttk.Label(self.window, text="Depth to:").grid(row=4, column=0)
-        ttk.Label(self.window, text="Units:").grid(row=5, column=0)
-        ttk.Label(self.window, text="Wet / dry:").grid(row=6, column=0)
-        ttk.Label(self.window, text="Suffix text:").grid(row=7, column=0)
-        ttk.Label(self.window, text="FILE NAME:").grid(row=8, column=0)
-
-        #textbox entries
-        ttk.Entry(width=20, textvariable=self.BHIDstr).grid(row=1, column=1)
-        ttk.Entry(width=20, textvariable=self.PrefixTextstr).grid(row=2, column=1)
-        ttk.Entry(width=20, textvariable=self.DepthFromstr).grid(row=3, column=1)
-        ttk.Entry(width=20, textvariable=self.DepthTostr).grid(row=4, column=1)
-        ttk.Entry(width=20, textvariable=self.Unitsstr).grid(row=5, column=1)
-        ttk.Entry(width=20, textvariable=self.WetDrystr).grid(row=6, column=1)
-        ttk.Entry(width=20, textvariable=self.SuffixTextstr).grid(row=7, column=1)
-        self.fileNameEntry = ttk.Entry(width=40, textvariable=self.FileNamestr).grid(row=8, column=1)
-        """
