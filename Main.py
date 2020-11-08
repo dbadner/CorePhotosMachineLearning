@@ -11,10 +11,10 @@ import ctypes
 def main():
     skipDetectron = False #skip detectron whiteboard recognition, default = false, for development
 
-
     warnings.simplefilter(action='ignore', category=FutureWarning)
 
     objBWS = bws.frmBrowse()
+    skipML = objBWS.skipML
 
     #read in inputdirectory from user, and generate nested output directories if they do not yet exist
     #inputdir = #r'inputimages'
@@ -28,27 +28,33 @@ def main():
     outputNamedDir = inputdir + "\\" + "Output_Named_Images"
     if not os.path.exists(outputNamedDir): os.makedirs(outputNamedDir)
 
+    cfOutput: list
+    if not skipML:
+        wbOutputList = []
+        errorCount = 0
+        if not skipDetectron:
+            print("Reading in images and searching for white boards...")
+            objWB = wb.FindWhiteBoards(inputdir, outputWBDir, outputWBAnnoDir)
+            wbOutputList, errorCount = objWB.RunModel(True, True)
+            #wbOutputList [image filename, image filepath, whiteboard output image filepath, annotated output image filepath]
 
-    wbOutputList = []
-    errorCount = 0
-    if not skipDetectron:
-        print("Reading in images and searching for white boards...")
-        objWB = wb.FindWhiteBoards(inputdir, outputWBDir, outputWBAnnoDir)
-        wbOutputList, errorCount = objWB.RunModel(True, True)
-        #wbOutputList [image filename, image filepath, whiteboard output image filepath, annotated output image filepath]
+        else:
+            #use what is already in the directory, for debugging
+            wbOutputList, errorCount = sd.skip_detectron(inputdir, outputWBDir, outputWBAnnoDir)
 
+        if errorCount > 0:
+            ctypes.windll.user32.MessageBoxW(0, "Warning: white board not found in {} image file(s). Refer to output in terminal for details.".format(errorCount), "Warning", 0)
+
+        print("Classifying text in photos...")
+        cfOutput = ocr.ocrRoot(wbOutputList, outputWBDir, outputAnnoDir)
+
+        print("Classification complete. Stepping through results interactively...")
     else:
-        #use what is already in the directory, for debugging
-        wbOutputList, errorCount = sd.skip_detectron(inputdir, outputWBDir, outputWBAnnoDir)
+        #skipping machine learning part of program for efficiency, straight to UIForm
+        print("Skipping machine learning. Straight to user form to manually rename photos.")
+        cfOutput = ocr.readImagesRoot(inputdir)
 
-    if errorCount > 0:
-        ctypes.windll.user32.MessageBoxW(0, "Warning: white board not found in {} image file(s). Refer to output in terminal for details.".format(errorCount), "Warning", 0)
-
-    print("Classifying text in photos...")
-    cfOutput = ocr.ocrRoot(wbOutputList, outputWBDir, outputAnnoDir)
-
-    print("Classification complete. Stepping through results interactively...")
-    objUI = ui.UIForm(outputWBDir, outputNamedDir, cfOutput)
+    objUI = ui.UIForm(outputWBDir, outputNamedDir, cfOutput, skipML)
 
 
     #objTessWB = tesswb.TessFindWords(inputdir)

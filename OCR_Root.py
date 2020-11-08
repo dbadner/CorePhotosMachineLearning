@@ -42,6 +42,17 @@ def ocrRoot(wbList, inputDir, outputAnnoDir):
 
     return cfOutput
 
+def readImagesRoot(inputDir):
+    #This is executed if the user has selected to skip machine learning, just need to read in image files
+    cfOutput = []
+    for image_file in os.listdir(inputDir):
+        image_path = inputDir + '\\' + image_file
+        image: np.ndarray = cv2.imread(image_path)
+        if type(image) is np.ndarray:  # only process if image file
+            cfobj = cfOutputObj(image_file, image_path, image_path, image_path, "", "", "", -1, -1, -1)
+            cfOutput.append(cfobj)
+    return cfOutput
+
 class cfOutputObj:
 
     def __init__(self, imgFileName, imgFilePath, imgWBAnnoFilePath, imgAnnoFilePath, depthFrom, depthTo, wetDry, depthFromP, depthToP, wetDryP):

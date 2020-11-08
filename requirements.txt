@@ -1,195 +1,142 @@
-# This file may be used to create an environment using:
-# $ conda create --name <env> --file <this file>
-# platform: win-64
-_tflow_select=2.2.0=eigen
-absl-py=0.10.0=py37_0
-astor=0.8.1=py37_0
-async-generator=1.10=pypi_0
-atomicwrites=1.4.0=py_0
-attrs=20.2.0=py_0
-backcall=0.2.0=py_0
-blas=1.0=mkl
-bleach=3.2.1=pypi_0
-brotlipy=0.7.0=py37he774522_1000
-ca-certificates=2020.6.20=hecda079_0
-cachetools=4.1.1=pypi_0
-certifi=2020.6.20=py37hf50a25e_2
-cffi=1.14.3=py37h7a1dbc1_0
-chardet=3.0.4=py37_1003
-cloudpickle=1.6.0=py_0
-colorama=0.4.3=py_0
-conda-pack=0.5.0=pyh9f0ad1d_0
-cryptography=3.1=py37h7a1dbc1_0
-cudatoolkit=10.1.243=h74a9793_0
-curl=7.71.1=h2a8f88b_1
-cycler=0.10.0=py37_0
-cython=0.29.21=py37ha925a31_0
-dask-core=2.27.0=py_0
-decorator=4.4.2=py_0
-defusedxml=0.6.0=pypi_0
-detectron2=0.2.1=dev_0
-editdistance=0.5.3=py37h1834ac0_1
-entrypoints=0.3=pypi_0
-flake8=3.8.3=py_0
-flake8-polyfill=1.0.2=py37_0
-flake8-quotes=3.2.0=pyh9f0ad1d_0
-freetype=2.10.2=hd328e21_0
-future=0.18.2=pypi_0
-fvcore=0.1.2.post20200926=pypi_0
-gast=0.2.2=pypi_0
-google-auth=1.4.2=pypi_0
-google-colab=1.0.0=pypi_0
-google-pasta=0.2.0=pypi_0
-grpcio=1.31.0=py37he7da953_0
-h5py=2.10.0=py37h5e291fa_0
-hdf5=1.10.4=h7ebc959_0
-icc_rt=2019.0.0=h0cc432a_1
-icu=58.2=ha925a31_3
-idna=2.8=pypi_0
-imageio=2.9.0=py_0
-importlib-metadata=1.7.0=py37_0
-importlib_metadata=1.7.0=0
-imutils=0.5.3=py37hc8dfbb8_2
-iniconfig=1.0.1=py_0
-intel-openmp=2020.2=254
-ipykernel=4.6.1=pypi_0
-ipython=5.5.0=pypi_0
-ipython-genutils=0.2.0=pypi_0
-ipython_genutils=0.2.0=py37_0
-jedi=0.17.2=py37_0
-jinja2=2.11.2=pypi_0
-joblib=0.16.0=py_0
-jpeg=9d=he774522_0
-jsonschema=3.2.0=pypi_0
-jupyter-client=6.1.7=pypi_0
-jupyter_client=6.1.6=py_0
-jupyter_core=4.6.3=py37_0
-jupyterlab-pygments=0.1.1=pypi_0
-keras=2.3.1=0
-keras-applications=1.0.8=py_1
-keras-base=2.3.1=py37_0
-keras-preprocessing=1.1.0=py_1
-kiwisolver=1.2.0=py37h74a9793_0
-krb5=1.18.2=hc04afaa_0
-labelimg=1.8.3=pypi_0
-libcurl=7.71.1=h2a8f88b_1
-libpng=1.6.37=h2a8f88b_0
-libprotobuf=3.13.0=h200bbdf_0
-libsodium=1.0.18=h62dcd97_0
-libssh2=1.9.0=h7a1dbc1_1
-libtiff=4.1.0=h56a325e_1
-libwebp=1.0.2=hfa6e2cd_5
-lxml=4.5.2=pypi_0
-lz4-c=1.9.2=h62dcd97_1
-markdown=3.2.2=py37_0
-markupsafe=1.1.1=pypi_0
-matplotlib=3.3.1=0
-matplotlib-base=3.3.1=py37hba9282a_0
-mccabe=0.6.1=py37_1
-mistune=0.8.4=pypi_0
-mkl=2020.2=256
-mkl-service=2.3.0=py37hb782905_0
-mkl_fft=1.2.0=py37h45dec08_0
-mkl_random=1.1.1=py37h47e9c7a_0
-mnist=0.2.2=py_0
-mock=4.0.2=pypi_0
-more-itertools=8.5.0=py_0
-nbclient=0.5.0=pypi_0
-nbconvert=6.0.6=pypi_0
-nbformat=5.0.7=pypi_0
-nest-asyncio=1.4.0=pypi_0
-networkx=2.5=py_0
-ninja=1.10.1=py37h7ef1ec2_0
-notebook=5.2.2=pypi_0
-numpy=1.18.5=pypi_0
-numpy-base=1.19.1=py37ha3acd2a_0
-olefile=0.46=py37_0
-opencv=3.4.7=py37he19f8a2_1
-opencv-python=4.0.0.21=pypi_0
-openssl=1.1.1h=he774522_0
-opt-einsum=3.3.0=pypi_0
-packaging=20.4=py_0
-pandas=0.24.2=pypi_0
-pandocfilters=1.4.2=pypi_0
-parso=0.7.0=py_0
-pep8-naming=0.11.1=py37_0
-pickleshare=0.7.5=py37_1001
-pillow=7.2.0=py37hcc1f983_0
-pip=20.2.2=py37_0
-pluggy=0.13.1=py37_0
-portalocker=2.0.0=pypi_0
-portpicker=1.2.0=pypi_0
-prompt-toolkit=1.0.18=pypi_0
-protobuf=3.13.0=py37h6538335_0
-py=1.9.0=py_0
-pyasn1=0.4.8=pypi_0
-pyasn1-modules=0.2.8=pypi_0
-pycocotools=2.0=pypi_0
-pycodestyle=2.6.0=py_0
-pycparser=2.20=py_2
-pydot=1.4.1=pypi_0
-pyflakes=2.2.0=py_0
-pygments=2.7.1=py_0
-pyopenssl=19.1.0=py_1
-pyparsing=2.4.7=py_0
-pyqt=5.9.2=py37h6538335_2
-pyqt5=5.15.1=pypi_0
-pyqt5-sip=12.8.1=pypi_0
-pyreadline=2.1=py37_1
-pyrsistent=0.17.3=pypi_0
-pysocks=1.7.1=py37_1
-pytesseract=0.3.6=pyh9f0ad1d_0
-pytest=6.0.2=py37_0
-python=3.7.0=hea74fb7_0
-python-dateutil=2.8.1=py_0
-python_abi=3.7=1_cp37m
-pytorch=1.6.0=py3.7_cuda101_cudnn7_0
-pytz=2020.1=py_0
-pywavelets=1.1.1=py37he774522_0
-pywin32=228=pypi_0
-pyyaml=5.3.1=py37he774522_1
-pyzmq=19.0.2=pypi_0
-qt=5.9.7=vc14h73c81de_0
-requests=2.21.0=pypi_0
-rsa=4.6=pypi_0
-scikit-image=0.14.0=py37h6538335_1
-scikit-learn=0.23.2=py37h47e9c7a_0
-scipy=1.5.2=py37h9439919_0
-seaborn=0.11.0=py_0
-setuptools=49.6.0=py37_0
-simplegeneric=0.8.1=pypi_0
-sip=4.19.8=py37h6538335_0
-six=1.12.0=pypi_0
-sqlite=3.33.0=h2a8f88b_0
-tabulate=0.8.7=pypi_0
-tensorboard=1.15.0=pypi_0
-tensorflow=1.15.4=pypi_0
-tensorflow-base=1.14.0=eigen_py37hdbc3f0e_0
-tensorflow-estimator=1.15.1=pypi_0
-termcolor=1.1.0=py37_1
-testpath=0.4.4=pypi_0
-threadpoolctl=2.1.0=pyh5ca1d4c_0
-tk=8.6.10=he774522_0
-toml=0.10.1=py_0
-toolz=0.10.0=py_0
-torchvision=0.7.0=py37_cu101
-tornado=4.5.3=pypi_0
-tqdm=4.49.0=pypi_0
-traitlets=5.0.4=py_0
-urllib3=1.24.3=pypi_0
-vc=14.1=h0510ff6_4
-vs2015_runtime=14.16.27012=hf0eaf9b_3
-wcwidth=0.2.5=py_0
-webencodings=0.5.1=pypi_0
-werkzeug=1.0.1=py_0
-wheel=0.35.1=py_0
-win_inet_pton=1.1.0=py37_0
-wincertstore=0.2=py37_0
-wrapt=1.12.1=py37he774522_1
-xz=5.2.5=h62dcd97_0
-yacs=0.1.8=pypi_0
-yaml=0.2.5=he774522_0
-zeromq=4.3.2=ha925a31_3
-zipp=3.1.0=py_0
-zlib=1.2.11=h62dcd97_4
-zstd=1.4.5=h04227a9_0
+absl-py @ file:///C:/ci/absl-py_1600290345082/work
+altgraph==0.16.1
+astor==0.8.1
+async-generator==1.10
+atomicwrites==1.4.0
+attrs @ file:///tmp/build/80754af9/attrs_1600298409949/work
+backcall==0.2.0
+bleach==3.2.1
+cachetools==4.1.1
+certifi==2020.6.20
+cloudpickle @ file:///tmp/build/80754af9/cloudpickle_1598884132938/work
+colorama @ file:///tmp/build/80754af9/colorama_1603211150991/work
+conda-pack @ file:///home/conda/feedstock_root/build_artifacts/conda-pack_1598981661433/work
+cycler==0.10.0
+Cython @ file:///C:/ci/cython_1594834055134/work
+dask @ file:///tmp/build/80754af9/dask-core_1602083700509/work
+decorator==4.4.2
+defusedxml==0.6.0
+-e git+https://github.com/DGMaxime/detectron2-windows@63adf1dd190bfd8b023728e11c38ee324eda8fa3#egg=detectron2
+editdistance @ file:///D:/bld/editdistance_1597301725888/work
+entrypoints==0.3
+flake8 @ file:///tmp/build/80754af9/flake8_1601911421857/work
+flake8-polyfill==1.0.2
+flake8-quotes @ file:///home/conda/feedstock_root/build_artifacts/flake8-quotes_1589330264223/work
+future @ file:///D:/bld/future_1602538577781/work
+fvcore==0.1.2.post20200926
+gast @ file:///tmp/build/80754af9/gast_1597433534803/work
+google-auth==1.4.2
+google-colab==1.0.0
+google-pasta==0.2.0
+grpcio @ file:///C:/ci/grpcio_1597406403308/work
+h5py==2.8.0
+idna==2.8
+imageio @ file:///tmp/build/80754af9/imageio_1594161405741/work
+importlib-metadata @ file:///tmp/build/80754af9/importlib-metadata_1602276842396/work
+imutils @ file:///D:/bld/imutils_1594126159282/work
+iniconfig @ file:///tmp/build/80754af9/iniconfig_1602780191262/work
+ipykernel @ file:///C:/ci/ipykernel_1596208728219/work/dist/ipykernel-5.3.4-py3-none-any.whl
+ipython @ file:///C:/ci/ipython_1598883894321/work
+ipython-genutils==0.2.0
+jedi @ file:///C:/ci/jedi_1596472767194/work
+Jinja2==2.11.2
+joblib @ file:///tmp/build/80754af9/joblib_1601912903842/work
+jsonschema==3.2.0
+jupyter-client @ file:///tmp/build/80754af9/jupyter_client_1601311786391/work
+jupyter-core==4.6.3
+jupyterlab-pygments==0.1.1
+Keras==2.3.1
+Keras-Applications @ file:///tmp/build/80754af9/keras-applications_1594366238411/work
+Keras-Preprocessing==1.1.0
+kiwisolver==1.2.0
+labelImg==1.8.3
+lxml==4.5.2
+macholib @ file:///home/conda/feedstock_root/build_artifacts/macholib_1595268426755/work
+Markdown @ file:///C:/ci/markdown_1603216569530/work
+MarkupSafe==1.1.1
+matplotlib @ file:///C:/ci/matplotlib-base_1597858387645/work
+mccabe==0.6.1
+mistune==0.8.4
+mkl-fft==1.2.0
+mkl-random==1.1.1
+mkl-service==2.3.0
+mnist==0.2.2
+mock==4.0.2
+more-itertools @ file:///tmp/build/80754af9/more-itertools_1598884071673/work
+nbclient==0.5.0
+nbconvert==6.0.6
+nbformat==5.0.7
+nest-asyncio==1.4.0
+networkx @ file:///tmp/build/80754af9/networkx_1598376031484/work
+notebook==5.2.2
+numpy @ file:///C:/ci/numpy_and_numpy_base_1596233945180/work
+olefile==0.46
+opencv-python==4.0.0.21
+opt-einsum==3.3.0
+packaging==20.4
+pandas @ file:///C:/ci/pandas_1602088205210/work
+pandocfilters==1.4.2
+parso==0.7.0
+pefile==2019.4.18
+pep8-naming @ file:///C:/ci/pep8-naming_1600439397402/work
+pickleshare @ file:///C:/ci/pickleshare_1594374056827/work
+Pillow @ file:///C:/ci/pillow_1594298234712/work
+pluggy==0.13.1
+portalocker==2.0.0
+portpicker==1.2.0
+prompt-toolkit @ file:///tmp/build/80754af9/prompt-toolkit_1602688806899/work
+protobuf==3.13.0
+py @ file:///tmp/build/80754af9/py_1593446248552/work
+py2exe==0.10.0.2
+pyasn1==0.4.8
+pyasn1-modules==0.2.8
+pycocotools @ git+https://github.com/philferriere/cocoapi.git@2929bd2ef6b451054755dfd7ceb09278f935f7ad#subdirectory=PythonAPI
+pycodestyle==2.6.0
+pydot==1.4.1
+pyflakes==2.2.0
+Pygments @ file:///tmp/build/80754af9/pygments_1600458456400/work
+pyinstaller @ file:///D:/bld/pyinstaller_1603208856196/work
+pyinstaller-hooks-contrib @ file:///home/conda/feedstock_root/build_artifacts/pyinstaller-hooks-contrib_1601643128947/work
+pyparsing==2.4.7
+PyQt5==5.15.1
+PyQt5-sip==12.8.1
+pyrsistent==0.17.3
+pytesseract @ file:///home/conda/feedstock_root/build_artifacts/pytesseract_1599858751053/work
+pytest==0.0.0
+python-dateutil==2.8.1
+pytz==2020.1
+PyWavelets @ file:///C:/ci/pywavelets_1601658407053/work
+pywin32==228
+pywin32-ctypes @ file:///D:/bld/pywin32-ctypes_1602283314110/work
+PyYAML==5.3.1
+pyzmq==19.0.2
+requests==2.21.0
+rsa==4.6
+scikit-image==0.14.0
+scikit-learn @ file:///C:/ci/scikit-learn_1598376983131/work
+scipy @ file:///C:/ci/scipy_1597686737426/work
+seaborn @ file:///tmp/build/80754af9/seaborn_1600553570093/work
+simplegeneric==0.8.1
+six==1.15.0
+tabulate==0.8.7
+tensorboard==1.15.0
+tensorflow==1.15.4
+tensorflow-estimator==1.15.1
+termcolor==1.1.0
+testpath==0.4.4
+threadpoolctl @ file:///tmp/tmp9twdgx9k/threadpoolctl-2.1.0-py3-none-any.whl
+toml @ file:///tmp/build/80754af9/toml_1592853716807/work
+toolz @ file:///tmp/build/80754af9/toolz_1601054250827/work
+torch==1.6.0
+torchvision==0.7.0
+tornado==6.0.4
+tqdm==4.49.0
+traitlets @ file:///tmp/build/80754af9/traitlets_1602787416690/work
+urllib3==1.24.3
+wcwidth @ file:///tmp/build/80754af9/wcwidth_1593447189090/work
+webencodings==0.5.1
+Werkzeug==1.0.1
+wincertstore==0.2
+wrapt==1.12.1
+yacs==0.1.8
+zipp @ file:///tmp/build/80754af9/zipp_1603306325174/work

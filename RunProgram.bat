@@ -1,0 +1,1 @@
+conda activate sklearn-env & python cli.py

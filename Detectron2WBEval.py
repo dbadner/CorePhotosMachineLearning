@@ -16,12 +16,6 @@ from detectron2.structures import Instances
 from detectron2.utils.visualizer import Visualizer, VisImage
 import os
 from detectron2.data.datasets import register_coco_instances
-#import tensorflow as tf
-#from PIL import Image
-#import torch
-#import Functions as fn
-#import time
-#import imutils
 
 class FindWhiteBoards:
     # class variables

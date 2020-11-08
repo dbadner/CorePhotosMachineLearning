@@ -1,12 +1,9 @@
 from tkinter import *
 from tkinter import ttk
-from tkinter import filedialog
 import tkinter as tk
 from PIL import Image, ImageTk
 import Functions as fn
 import cv2
-import numpy as np
-import OCR_Handwriting as hw
 import os
 import shutil
 import ctypes
@@ -19,6 +16,7 @@ class UIForm:
     InputDir: str  # whiteboard image input directory (output directory of detectron)
     OutputDir: str  # final image output directory
     CFOutputList: list #list of tuples output from the OCR classification script that is returned from this function and fed
+    SkipML: bool #true if machine learning components have been skipped. false if machine learning has been performed
     #into the user form
     #tuple parameters: [image filename, image filepath, whiteboard output image filepath, annotated output image filepath,
     #annotated whiteboard output image filepath, classified depthFrom, classified depthTo, classified wet/dry,
@@ -30,12 +28,13 @@ class UIForm:
 
     #shows User Interface form
     #ImagePath: str#tk.StringVar
-    def __init__(self, inputdir, outputdir, cfoutputList):
+    def __init__(self, inputdir, outputdir, cfoutputList, skipML):
         #initialize variables related to image input/output
         self.InputDir = inputdir
         self.OutputDir = outputdir
         self.CFOutputList = cfoutputList
         self.OutputListInd = 0 #initialize index of the WBOutputList to start at (will iterate through images interactively)
+        self.SkipML = skipML
 
         #initialize variables that save previous depths
         self.PrevDepthFrom = ""
@@ -119,14 +118,21 @@ class UIForm:
         B2.place(x = xdim[1], y = btm + 70)
 
         #show images:
-        L = ttk.Label(self.window, text="Core photograph:")
-        L.place(x=xdim[2], y=10)
-        self.canvas1 = Canvas(self.window, height=250, width=800)  # dims[0], width = dims[1])
-        self.canvas1.place(x=xdim[2], y=10 + 20)
+        #set dimensions of core photo image depending on whether 2 images need to be shown
+        cvw = 800
+        cvh = 250
+        if self.SkipML:
+            cvw *= 2
+            cvh *= 2
         L = ttk.Label(self.window, text="Whiteboard found:")
         L.place(x=xdim[2], y=ydim[2])
-        self.canvas2 = Canvas(self.window, height=250, width=800)  # dims[0], width = dims[1])
+        self.canvas2 = Canvas(self.window, height=cvh, width=cvw)  # dims[0], width = dims[1])
         self.canvas2.place(x=xdim[2], y=ydim[2] + 20)
+        L = ttk.Label(self.window, text="Core photograph:")
+        L.place(x=xdim[2], y=10)
+        self.canvas1 = Canvas(self.window, height=cvh, width=cvw)  # dims[0], width = dims[1])
+        self.canvas1.place(x=xdim[2], y=10 + 20)
+
 
         #store in tuple for reference later
         #self.canvasesTup = (self.canvas1, self.canvas2)
@@ -147,12 +153,6 @@ class UIForm:
 
     def OCR(self, cfobj):
 
-        #set fields on form
-        self.InputPhotoName.set("Input photo file name: " + cfobj.ImgFileName)  # set the label at the top of the form
-        self.DepthFromstr.set(self.AddLeadingZeros(cfobj.DepthFrom))
-        self.DepthTostr.set(self.AddLeadingZeros(cfobj.DepthTo))
-        self.WetDrystr.set(cfobj.WetDry)
-
         #read in appropriate images
         #first, read in the annotated core photo as CV2, then resize and convert
 
@@ -161,14 +161,17 @@ class UIForm:
         self.imgTK = self.imageIntoCanvas(image)
         self.canvas1.create_image(0, 0, anchor=NW, image=self.imgTK)
 
-        #next, read in whiteboard image
-        #image2 = cv2.imread(self.WBOutputList[self.OutputListInd][2])
-        #image2 = cv2.imread(wbimage.imageOutAnno)
+        if not self.SkipML:
+            # next, read in whiteboard image
+            image2 = cv2.imread(cfobj.ImgAnnoFilePath)
+            self.imgTK2 = self.imageIntoCanvas(image2)
+            self.canvas2.create_image(0, 0, anchor=NW, image=self.imgTK2)
 
-
-        image2 = cv2.imread(cfobj.ImgAnnoFilePath)
-        self.imgTK2 = self.imageIntoCanvas(image2)
-        self.canvas2.create_image(0, 0, anchor=NW, image=self.imgTK2)
+            # set fields on form
+            self.InputPhotoName.set("Input photo file name: " + cfobj.ImgFileName)  # set the label at the top of the form
+            self.DepthFromstr.set(self.AddLeadingZeros(cfobj.DepthFrom))
+            self.DepthTostr.set(self.AddLeadingZeros(cfobj.DepthTo))
+            self.WetDrystr.set(cfobj.WetDry)
 
     def ApplyPrevDepths(self):
         #function applies previous depths from and to when corresponding button is clicked
@@ -198,7 +201,12 @@ class UIForm:
         #function takes image in CV2 format, converts to PIL image, and places in canvas identified by canvind
         # image = Image.open(r'input\\RC635_166.06-172.04_m_wet.JPG')
         #wb = hw.WBImage("")
-        image = fn.ResizeImage(image, 800, 250) #resize image, pass max x and y dimensions
+        cvw = 800
+        cvh = 250
+        if self.SkipML:
+            cvw *= 2
+            cvh *= 2
+        image = fn.ResizeImage(image, cvw, cvh) #resize image, pass max x and y dimensions
         dims = image.shape
         impil = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))  # make PIL image
         photo = ImageTk.PhotoImage(impil)
