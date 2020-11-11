@@ -70,7 +70,7 @@ class UIForm:
                               ("Prefix text:", self.PrefixTextstr, defW, defS),
                               ("Depth from:", self.DepthFromstr, defW, "-"),
                               ("Depth to:", self.DepthTostr, defW, defS),
-                              ("Units:", self.Unitsstr, defW, defS), ("Wet / dry:", self.WetDrystr, defW, defS),
+                              ("Units:", self.Unitsstr, defW, defS), ("Dry / wet:", self.WetDrystr, defW, defS),
                               ("Suffix text:", self.SuffixTextstr, defW, defS)]
         #, ("FILE NAME:", self.FileNamestr, 50)]
 
@@ -103,6 +103,8 @@ class UIForm:
         #default units to 'm'
         self.Unitsstr.set("m")
 
+
+
         #for i in range(5):
             #ttk.Entry(width=20).grid(row=i + 1, column=2)
             # ent.pack(side = RIGHT, expand = YES, fill = X)
@@ -112,10 +114,20 @@ class UIForm:
         B4 = ttk.Button(text="Use Previous Depth To as Depth From", command=self.ApplyPrevDepthTo)
         B4.place(x = 235, y = 108 + ydim[1])
 
+        # add radio buttons for DRY vs WET
+        self.dw = IntVar()
+        r = ttk.Radiobutton(text = "DRY", variable = self.dw, value=1, command=self.RadioChangeDryWet)
+        r.place(x = 245, y = 215)
+        r2 = ttk.Radiobutton(text = "WET", variable = self.dw, value=2, command=self.RadioChangeDryWet)
+        r2.place(x = 300, y = 215)
+
+
         B = ttk.Button(text="Accept", command=self.accept_button) #.grid(row=9, column=0)
         B.place(x = xdim[0], y = btm + 70)
         B2 = ttk.Button(text="Skip", command=self.skip_button) #.grid(row=9, column=1)
         B2.place(x = xdim[1], y = btm + 70)
+
+
 
         #show images:
         #set dimensions of core photo image depending on whether 2 images need to be shown
@@ -172,6 +184,17 @@ class UIForm:
             self.DepthFromstr.set(self.AddLeadingZeros(cfobj.DepthFrom))
             self.DepthTostr.set(self.AddLeadingZeros(cfobj.DepthTo))
             self.WetDrystr.set(cfobj.WetDry)
+            if cfobj.WetDry == "DRY": #set radio button for DRY vs WET
+                self.dw.set(1)
+            elif cfobj.WetDry == "WET":
+                self.dw.set(2)
+
+    def RadioChangeDryWet(self):
+        #function executes when radio buttons for dry / wet are selected
+        if self.dw.get() == 1: #dry
+            self.WetDrystr.set("DRY")
+        elif self.dw.get() == 2: #wet
+            self.WetDrystr.set("WET")
 
     def ApplyPrevDepths(self):
         #function applies previous depths from and to when corresponding button is clicked
