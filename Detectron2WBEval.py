@@ -39,9 +39,8 @@ class FindWhiteBoards:
         if 'wb_test' not in catalogList:
             register_coco_instances("wb_test", {}, "roboflow/test/_annotations.coco.json", "/roboflow/test")
 
-    def RunModel(self, saveCropOutput: bool, saveAnnoOutput: bool):
-        #t0 = time.time()
-        #outputDict = {}
+    def RunModel(self, saveCropOutput: bool, saveAnnoOutput: bool, cpuMode: bool):
+        #set to CPU mode if system does not have NVIDIA GPU
         outputList = []
 
         self.RegisterDataset()
@@ -51,6 +50,8 @@ class FindWhiteBoards:
         cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.9
         cfg.MODEL.WEIGHTS = "./wb_model/model_final.pth"
         cfg.MODEL.ROI_HEADS.NUM_CLASSES = 2
+        if cpuMode:
+            cfg.MODEL.DEVICE = 'cpu'
         predictor = DefaultPredictor(cfg)
         errorCount: int = 0
 

@@ -14,18 +14,34 @@ class frmBrowse:
         self.window.title("Machine Learning Core Photo Renaming App")
         self.window.iconphoto(False, tk.PhotoImage(file='input\\icon.png'))
         self.window.bind('<Return>', self.enter_run)
-        #window.geometry('1200x800')
+        self.window.geometry('1000x200')
         # window.configure(background="gray")
         self.ImagePath = tk.StringVar()
         self.skipML = False
         self.ImagePathStr = ""
+        self.cpuMode = True #default to True
         self.chkValue = tk.BooleanVar()
+        self.device = tk.IntVar()
 
-        ttk.Label(self.window, text="Photograph folder location:").grid(row=0, column=0)
-        ttk.Button(text="Browse", command=self.browse_button).grid(row=0, column=1)
-        ttk.Entry(width=120, textvariable=self.ImagePath).grid(row=0, column=2)
-        ttk.Checkbutton(text="Skip machine learning", variable=self.chkValue).grid(row=1, column=0)
-        bt = ttk.Button(text="Run", command=self.run_button).grid(row=2, column=0)
+        L1 = ttk.Label(self.window, text="Photograph folder location:")#.grid(row=0, column=0)
+        L1.place(x=5, y=2)
+        B = ttk.Button(text="Browse", command=self.browse_button)#.grid(row=0, column=1)
+        B.place(x=160, y=0)
+        E = ttk.Entry(width=120, textvariable=self.ImagePath)#.grid(row=0, column=2)
+        E.place(x=245, y=2)
+        C = ttk.Checkbutton(text="Skip machine learning", variable=self.chkValue)#.grid(row=1, column=0)
+        C.place(x=5, y=40)
+        L2 = ttk.Label(self.window, text="Process graphics using:")#.grid(row=2, column=0)
+        L2.place(x=5, y=80)
+        r = ttk.Radiobutton(text="CPU", variable=self.device, value=1)#.grid(row=2, column=1)
+        r.place(x=140, y=80)
+        r2 = ttk.Radiobutton(text="GPU", variable=self.device, value=0)#.grid(row=2, column=2)
+        r2.place(x=190, y=80)
+        bt = ttk.Button(text="Run", command=self.run_button)#.grid(row=3, column=0)
+        bt.place(x=5, y=120)
+
+        #initialize values
+        self.device.set(1)
         self.chkValue.set(False)
 
         self.window.mainloop()
@@ -47,6 +63,7 @@ class frmBrowse:
         else:
             self.ImagePathStr = self.ImagePath.get()
             self.skipML = self.chkValue.get()
+            self.cpuMode = bool(self.device.get())
             self.window.destroy()
 
     def enter_run(self, obj):
