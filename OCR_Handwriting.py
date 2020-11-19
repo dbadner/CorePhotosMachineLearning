@@ -51,7 +51,7 @@ class WBImage:
 
 	def __init__(self, inputdir: str):
 		self.DevelopMode = False #SET TO TRUE FOR DEBUGGING
-		self.TrainingMode = False #SET TRUE FOR BUILDING TRAINING SET, ALNOG WITH DEVELOP MODE ABOVE
+		self.TrainingMode = False #SET TRUE FOR BUILDING TRAINING SET, ALONG WITH DEVELOP MODE ABOVE
 		self.InputDir = inputdir
 		self.Num_AZ_Model = load_model('number_az_model.h5')
 		self.Num_Model = load_model('mnist_number_model.h5')
@@ -476,85 +476,85 @@ class WBImage:
 			self.SaveUpdateTrainingSetCSV('depth_train_dataset.csv', image_file, dataList, labelList)
 
 		#Don't run SVM if in training mode, temporarily
-		if not self.TrainingMode:
+		#if not self.TrainingMode:
 
-			y_result = self.RunWordNumSVMModel(dataList) #output from 1 to 0 representing likelihood of being a number
-			yMaxInd = [-1,-1] #word index corresponding to highest and second highest y_result
-			yMax = [0,0] #highest and second highest y_result
-			for ind, (word, y) in enumerate(zip(self.wordList, y_result)):
-				#code to output word characters and corresponding number likelihood
-				if self.DevelopMode:
-					output = "".join(word.wordCharList)
-					output += ": {:.2f}".format(y[1])
-					print(output)
+		y_result = self.RunWordNumSVMModel(dataList) #output from 1 to 0 representing likelihood of being a number
+		yMaxInd = [-1,-1] #word index corresponding to highest and second highest y_result
+		yMax = [0,0] #highest and second highest y_result
+		for ind, (word, y) in enumerate(zip(self.wordList, y_result)):
+			#code to output word characters and corresponding number likelihood
+			if self.DevelopMode:
+				output = "".join(word.wordCharList)
+				output += ": {:.2f}".format(y[1])
+				print(output)
 
-				#check if most or second most likely, store if so
-				#for n in range(len(yMaxInd)):
-				if y[1] > yMax[0]:
-					yMax[1] = yMax[0]
-					yMaxInd[1] = yMaxInd[0]
-					yMax[0] = y[1]
-					yMaxInd[0] = ind
-				elif y[1] > yMax[1]:
-					yMax[1] = y[1]
-					yMaxInd[1] = ind
-			wordNumStr = []  # list of str
-			#output results to image
-			for n, p in zip(yMaxInd, yMax): #loop through 2 number words found...
-				currWord = ""
-				if p > 0.15: #only output if prob of word being number > 35%
-					(x, y, w, h) = self.wordList[n].dims
-					cv2.rectangle(self.imageOutAnno, (x, y), (x + w, y + h), (255, 0, 255), 2)
-					# check for punctuation, add to image if it exists
-					xP = yP = wP = hP = -1 #initialize punctuation coordinates to null val
-					punct = False
-					if punctIDList[n] > -1:  # -1 is null val for no punctuation
-						(xP, yP, wP, hP) = self.charList[punctIDList[n]].Dims
-						cv2.putText(self.imageOutAnno, ".", (xP - 10, yP - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 0, 0), 2)
-						punct = True
-					for c in self.wordList[n].charList:  # number characters,
-						#output box to image around character
-						(xC, yC, wC, hC) = self.charList[c].Dims
-						cv2.rectangle(self.imageOutAnno, (xC, yC), (xC + wC, yC + hC), (0, 0, 255), 2)
-						# pull labels from numeric neural network
-						i = np.argmax(predsNum[c])
-						prob = predsNum[i]
-						label = self.LabelNames[i]
-						cv2.putText(self.imageOutAnno, label, (xC - 10, yC - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 0, 0), 2)
-						if punct and (xP + wP/2) < (xC + wC/2): #there is punctuation, and if it fits before current character
-							currWord += "."
-							punct = False
-						currWord += label
-				wordNumStr.append(currWord)
-			#regardless of probability, assign number words to from / to respectively, store in class variables
-			if self.wordList[yMaxInd[0]].dims[0] < self.wordList[yMaxInd[1]].dims[0]: #compare x values, depth from comes first
-				self.depthFrom = wordNumStr[0]
-				self.depthFromP = yMax[0]
-				self.depthTo = wordNumStr[1]
-				self.depthToP = yMax[1]
-			else:
-				self.depthFrom = wordNumStr[1]
-				self.depthFromP = yMax[1]
-				self.depthTo = wordNumStr[0]
-				self.depthToP = yMax[0]
+			#check if most or second most likely, store if so
+			#for n in range(len(yMaxInd)):
+			if y[1] > yMax[0]:
+				yMax[1] = yMax[0]
+				yMaxInd[1] = yMaxInd[0]
+				yMax[0] = y[1]
+				yMaxInd[0] = ind
+			elif y[1] > yMax[1]:
+				yMax[1] = y[1]
+				yMaxInd[1] = ind
+		wordNumStr = []  # list of str
+		#output results to image
+		for n, p in zip(yMaxInd, yMax): #loop through 2 number words found...
+			currWord = ""
+			if p > 0.15: #only output if prob of word being number > 35%
+				(x, y, w, h) = self.wordList[n].dims
+				cv2.rectangle(self.imageOutAnno, (x, y), (x + w, y + h), (255, 0, 255), 2)
+				# check for punctuation, add to image if it exists
+				xP = yP = wP = hP = -1 #initialize punctuation coordinates to null val
+				punct = False
+				if punctIDList[n] > -1:  # -1 is null val for no punctuation
+					(xP, yP, wP, hP) = self.charList[punctIDList[n]].Dims
+					cv2.putText(self.imageOutAnno, ".", (xP - 10, yP - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 0, 0), 2)
+					punct = True
+				for c in self.wordList[n].charList:  # number characters,
+					#output box to image around character
+					(xC, yC, wC, hC) = self.charList[c].Dims
+					cv2.rectangle(self.imageOutAnno, (xC, yC), (xC + wC, yC + hC), (0, 0, 255), 2)
+					# pull labels from numeric neural network
+					i = np.argmax(predsNum[c])
+					prob = predsNum[i]
+					label = self.LabelNames[i]
+					cv2.putText(self.imageOutAnno, label, (xC - 10, yC - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 0, 0), 2)
+					if punct and (xP + wP/2) < (xC + wC/2): #there is punctuation, and if it fits before current character
+						currWord += "."
+						punct = False
+					currWord += label
+			wordNumStr.append(currWord)
+		#regardless of probability, assign number words to from / to respectively, store in class variables
+		if self.wordList[yMaxInd[0]].dims[0] < self.wordList[yMaxInd[1]].dims[0]: #compare x values, depth from comes first
+			self.depthFrom = wordNumStr[0]
+			self.depthFromP = yMax[0]
+			self.depthTo = wordNumStr[1]
+			self.depthToP = yMax[1]
+		else:
+			self.depthFrom = wordNumStr[1]
+			self.depthFromP = yMax[1]
+			self.depthTo = wordNumStr[0]
+			self.depthToP = yMax[0]
 
-			print("-----")
-			print("PREDICTION SUMMARY:")
-			print("Depth From: " + self.depthFrom + " (P={:.0f}%)".format(self.depthFromP*100))
-			print("Depth To: " + self.depthTo + " (P={:.0f}%)".format(self.depthToP*100))
-			print("Wet / Dry: " + self.wetDry)
+		print("-----")
+		print("PREDICTION SUMMARY:")
+		print("Depth From: " + self.depthFrom + " (P={:.0f}%)".format(self.depthFromP*100))
+		print("Depth To: " + self.depthTo + " (P={:.0f}%)".format(self.depthToP*100))
+		print("Wet / Dry: " + self.wetDry)
 
-			if self.DevelopMode:  # only show cv2 image if in develop mode
-				imageS = fn.ResizeImage(self.imageOutAnno, 800, 800)
-				cv2.imshow("Final Image", imageS)
-				cv2.waitKey(0)
+		if self.DevelopMode:  # only show cv2 image if in develop mode
+			imageS = fn.ResizeImage(self.imageOutAnno, 800, 800)
+			cv2.imshow("Final Image", imageS)
+			cv2.waitKey(0)
 
-			#lastly, save the image in the Output_Anno folder
-			out_file_name: str = outputAnnoDir + '\\' + re.search(r"(.*)\.", image_file).group(0)[:-1]
-			out_file_name += "_WB_Cropped_Anno.png"
-			cv2.imwrite(out_file_name, self.imageOutAnno)
+		#lastly, save the image in the Output_Anno folder
+		out_file_name: str = outputAnnoDir + '\\' + re.search(r"(.*)\.", image_file).group(0)[:-1]
+		out_file_name += "_WB_Cropped_Anno.png"
+		cv2.imwrite(out_file_name, self.imageOutAnno)
 
-			return out_file_name
+		return out_file_name
 
 	def BuildFeatureMatrix(self, labeldata: bool, tH, tW, image, keywordProbMin):
 		# built feature matrix

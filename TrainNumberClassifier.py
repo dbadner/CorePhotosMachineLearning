@@ -44,7 +44,9 @@ X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.01
 
 #SVM Polynomial model ###USED
 #Create a svm Classifier
-clf = svm.SVC(kernel='poly', degree=4, class_weight='balanced', gamma='scale', random_state=31, probability=True)
+clf = svm.SVC(kernel='poly', degree=5, class_weight='balanced', gamma='scale', random_state=31, probability=True)
+#clf = svm.SVC(kernel='rbf', class_weight='balanced', gamma='scale', random_state=31, probability=True)
+#clf = svm.SVC(kernel='sigmoid', class_weight='balanced', gamma='scale', random_state=112, probability=True)
 
 #Train the model using the training sets
 clf.fit(X_train, y_train)
