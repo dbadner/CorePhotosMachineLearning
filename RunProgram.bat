@@ -1,1 +1,1 @@
-conda activate sklearn-env & python Main.py
+conda activate ml & python Main.py

@@ -2,15 +2,15 @@
 Program for automatically renaming drill core photographs using machine learning algorithms to detect drill depths and other keywords handwritten on whiteboards. Includes a UI 
 for interactively stepping through photographs and easily making required modifications.
 
-Basic program pipeline: 
-* Opening browse user interface for selection of directory containing core photographs.
-* Detectron2 trained model to detect and isolate the whiteboard in the photos.
-* CV2 contouring to isolate handwritten characters on whiteboard.
-* TensorFlow trained neural network to classify the handwritten text characters as alpha-numeric.
-* Coded algorithms to group characters into words, and to identify keywords "DEPTH", "FROM", and "WET" vs "DRY".
-* ScikitLearn logistic regression model to select the correct two words as numbers. 
-* TensorFLow trained neural network to classify the characters in the two numbers as numeric-only.
-* Main program user interface to step through named photographs interactively. 
+Overview of program steps under the hood: 
+* Initial browse user interface for selection of directory containing core photographs
+* Detectron2 trained model to detect and isolate the whiteboard in the photos
+* CV2 contouring to isolate handwritten characters on whiteboard
+* TensorFlow trained neural network to classify the handwritten text characters as alpha-numeric
+* Coded algorithms to group characters into words, and to identify keywords "DEPTH", "FROM", and "WET" vs "DRY"
+* ScikitLearn logistic regression model to select the correct two words as numbers
+* TensorFLow trained neural network to classify the characters in the two numbers as numeric-only
+* Main program user interface to step through named photographs interactively
 
 ## Requirements
 * Python 3.7
@@ -37,6 +37,8 @@ Basic program pipeline:
 ## To Run the Program
 Double click 'RunProgram.bat' if the environment was setup using setup.bat above. This activates the 'ml' conda environment and executes the python entry point into the program, 'Main.py'. Otherwise, 'python Main.py' in the terminal will run the program. 
 
+Output images will be saved in a subdirectory created within the user selected input directory named "Output_Named_Images".
+
 ## Notes on Using the Program
 ### Opening browse screen
 <img src="/input/OpeningBrowseScreen.png" alt="Opening Browse Screen" width="1000"/>
@@ -60,3 +62,13 @@ Double click 'RunProgram.bat' if the environment was setup using setup.bat above
 
 Note: Examples of good photographs are included in the ‘ExamplePhotos’ directory.
 
+## Program Directory Structure
+Files in the root pyOCR directory are part of the main program, and are required to run the program. 
+This includes python source code files and machine learning models.
+
+Subdirectories:
+* ExamplePhotos: contains example input core photographs.
+* input: contains input images and icons used by the program and the README.
+* roboflow: contains the json files needed for the whiteboard detection model.
+* supplementary code: contains the python source code created for training models, not needed to run the 
+program with the models as-is but needed to updated the models.

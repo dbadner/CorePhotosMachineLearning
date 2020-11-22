@@ -48,7 +48,7 @@ class FindWhiteBoards:
         cfg = get_cfg()
         cfg.merge_from_file(model_zoo.get_config_file("COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml"))
         cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.9
-        cfg.MODEL.WEIGHTS = "./wb_model/model_final.pth"
+        cfg.MODEL.WEIGHTS = "wb_model.pth"
         cfg.MODEL.ROI_HEADS.NUM_CLASSES = 2
         if cpuMode:
             cfg.MODEL.DEVICE = 'cpu'

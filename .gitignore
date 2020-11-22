@@ -1,8 +1,5 @@
-wb_model/
+wb_model.pth
 superseded/
 output/
 inputimages/
-dist/
-build/
-ExamplePhotos/
-az_dataset/
+supplementary_code/az_dataset/
