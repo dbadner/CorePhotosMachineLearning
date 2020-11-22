@@ -23,7 +23,7 @@ def ocrRoot(wbList, inputDir, outputAnnoDir):
         image_file = wb[0]  # retrieve the whiteboard image file name
         image_path = wb[2]  # retrieve the whiteboard image path
         # load the input file from disk
-        # image_path = self.InputDir + '\\' + image_file
+        # image_path = self.InputDir + '/' + image_file
         image = cv2.imread(image_path)
         if type(image) is np.ndarray:  # only process if image file
             # create new image object
@@ -46,7 +46,7 @@ def readImagesRoot(inputDir):
     #This is executed if the user has selected to skip machine learning, just need to read in image files
     cfOutput = []
     for image_file in os.listdir(inputDir):
-        image_path = inputDir + '\\' + image_file
+        image_path = inputDir + '/' + image_file
         image: np.ndarray = cv2.imread(image_path)
         if type(image) is np.ndarray:  # only process if image file
             cfobj = cfOutputObj(image_file, image_path, image_path, image_path, "", "", "", -1, -1, -1)

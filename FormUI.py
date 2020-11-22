@@ -42,7 +42,7 @@ class UIForm:
 
         self.window = Tk()
         self.window.title("Machine Learning Core Photo Renaming App")
-        self.window.iconphoto(False, tk.PhotoImage(file='input\\icon.png'))
+        self.window.iconphoto(False, tk.PhotoImage(file='input/icon.png'))
         self.window.geometry('1100x600')
         self.window.bind('<Return>', self.enter_run)
         #window.geometry('1200x800')
@@ -150,7 +150,7 @@ class UIForm:
         #self.canvasesTup = (self.canvas1, self.canvas2)
 
         #open image in CV2 format
-        #image = cv2.imread(r'input\\RC635_166.06-172.04_m_wet.JPG')
+        #image = cv2.imread(r'input/RC635_166.06-172.04_m_wet.JPG')
         # place annotated detectron image into canvas1
         #imgTK = self.imageIntoCanvas(self.WBOutputList[self.OutputListInd[3]])
         #self.canvas1.create_image(0, 0, anchor=NW, image=imgTK)
@@ -222,7 +222,7 @@ class UIForm:
 
     def imageIntoCanvas(self, image):
         #function takes image in CV2 format, converts to PIL image, and places in canvas identified by canvind
-        # image = Image.open(r'input\\RC635_166.06-172.04_m_wet.JPG')
+        # image = Image.open(r'input/RC635_166.06-172.04_m_wet.JPG')
         #wb = hw.WBImage("")
         cvw = 800
         cvh = 250
@@ -257,7 +257,7 @@ class UIForm:
         #self.OutputPhotoFileName = ""
         #save the image as a copy in the output directory
         temp, suffix = os.path.splitext(self.CFOutputList[self.OutputListInd].ImgFileName)
-        new_name = self.OutputDir + "\\" + self.FileNamestr.get() + suffix
+        new_name = self.OutputDir + "/" + self.FileNamestr.get() + suffix
         if os.path.exists(new_name):
             result = ctypes.windll.user32.MessageBoxW(0,"Warning: File "+ self.FileNamestr.get() + suffix + " already exists" +
                     " in output directory. Press OK to overwrite or Cancel to rename.", "Warning", 1)

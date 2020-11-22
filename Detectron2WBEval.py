@@ -60,7 +60,7 @@ class FindWhiteBoards:
         # image_file = "input/RC663_0040.76-0047.60_m_DRY.jpg"
 
         for image_file in os.listdir(self.InputDir):
-            image_path = self.InputDir + '\\' + image_file
+            image_path = self.InputDir + '/' + image_file
             img: np.ndarray = cv2.imread(image_path)
 
             #print("Processing file: {:.3f}".format(time.time() - t0))
@@ -115,7 +115,7 @@ class FindWhiteBoards:
                     result_image: np.ndarray = result.get_image()[:, :, ::-1]
 
                     # get file name without extension, -1 to remove "." at the end
-                    anno_out_filename: str = self.OutputWBAnnoDir + '\\' + re.search(r"(.*)\.", image_file).group(0)[:-1]
+                    anno_out_filename: str = self.OutputWBAnnoDir + '/' + re.search(r"(.*)\.", image_file).group(0)[:-1]
                     anno_out_filename += "_WB_Anno.png"
                     cv2.imwrite(anno_out_filename, result_image)
 
@@ -130,7 +130,7 @@ class FindWhiteBoards:
                         # https://www.pyimagesearch.com/2014/01/20/basic-image-manipulations-in-python-and-opencv-resizing-scaling-rotating-and-cropping/
                         crop_img = img[box[1].astype(int):box[3].astype(int), box[0].astype(int):box[2].astype(int)]
                         # get file name without extension, -1 to remove "." at the end
-                        out_file_name: str = self.OutputWBDir + '\\' + re.search(r"(.*)\.", image_file).group(0)[:-1]
+                        out_file_name: str = self.OutputWBDir + '/' + re.search(r"(.*)\.", image_file).group(0)[:-1]
                         out_file_name += "_WB_Cropped.png"
                         cv2.imwrite(out_file_name, crop_img)
                         #add to the outputDictionary

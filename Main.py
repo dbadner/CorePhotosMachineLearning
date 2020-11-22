@@ -20,13 +20,13 @@ def main():
     #read in inputdirectory from user, and generate nested output directories if they do not yet exist
     #inputdir = #r'inputimages'
     inputdir = objBWS.ImagePath.get()
-    outputWBDir = inputdir + "\\" + "Output_WB"
+    outputWBDir = inputdir + "/" + "Output_WB"
     if not os.path.exists(outputWBDir): os.makedirs(outputWBDir)
-    outputAnnoDir = inputdir + "\\" + "Output_Anno"
+    outputAnnoDir = inputdir + "/" + "Output_Anno"
     if not os.path.exists(outputAnnoDir): os.makedirs(outputAnnoDir)
-    outputWBAnnoDir = inputdir + "\\" + "Output_WB_Anno"
+    outputWBAnnoDir = inputdir + "/" + "Output_WB_Anno"
     if not os.path.exists(outputWBAnnoDir): os.makedirs(outputWBAnnoDir)
-    outputNamedDir = inputdir + "\\" + "Output_Named_Images"
+    outputNamedDir = inputdir + "/" + "Output_Named_Images"
     if not os.path.exists(outputNamedDir): os.makedirs(outputNamedDir)
 
     cfOutput: list

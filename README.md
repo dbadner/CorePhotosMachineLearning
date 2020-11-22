@@ -13,26 +13,29 @@ Overview of program steps under the hood:
 * Main program user interface to step through named photographs interactively
 
 ## Requirements
-* Python 3.7
+* Python==3.7
 * Numpy
 * Opencv
-* h5py
+* h5py==2.10.0 (Note: h5py 3.0 and up throws error)
 * tensorflow
 * tk
 * pillow
 * cudatoolkit
 * cython
-* pycocotools (pip install "git+https://github.com/philferriere/cocoapi.git#egg=pycocotools&subdirectory=PythonAPI")
-* detectron2 (pip install "git+https://github.com/DGMaxime/detectron2-windows.git")
 * imutils
 * scikit-learn
+* git-lfs
+* pycocotools (for Windows: pip install "git+https://github.com/philferriere/cocoapi.git#egg=pycocotools&subdirectory=PythonAPI")
+* detectron2 (for Windows: pip install "git+https://github.com/DGMaxime/detectron2-windows.git")
 
 ## Instructions For Setup on Windows
 1. Install anaconda: https://www.anaconda.com/products/individual
-2. Install git: https://git-scm.com/download/win
-3. Install Cuda toolkit: https://developer.nvidia.com/cuda-10.1-download-archive-base
-4. Install C++ build tools: https://visualstudio.microsoft.com/visual-cpp-build-tools (run this program and install C++ build tools)
-5. Double click setup.bat; this will create a new conda environment named ‘ml’ with python 3.7, will activate that environment, and will install necessary packages
+2. Install C++ build tools: https://visualstudio.microsoft.com/visual-cpp-build-tools (run this program and install C++ build tools)
+3. Double click Setup.bat; this will create a new conda environment named ‘ml’ with python 3.7, will activate that environment, and will install necessary packages.
+
+Note that the the setup installs git large file storage (gitlfs); this is needed to pull the whiteboard model named "wb_model.pth". Therefore the final command in the 
+batch Setup file is to pull this model with "git lfs pull", as the initial repository clone would not have grabbed this file if 
+gitlfs was not yet installed. 
 
 ## To Run the Program
 Double click 'RunProgram.bat' if the environment was setup using setup.bat above. This activates the 'ml' conda environment and executes the python entry point into the program, 'Main.py'. Otherwise, 'python Main.py' in the terminal will run the program. 

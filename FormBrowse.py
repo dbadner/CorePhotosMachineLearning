@@ -12,7 +12,7 @@ class frmBrowse:
     def __init__(self):
         self.window = Tk()
         self.window.title("Machine Learning Core Photo Renaming App")
-        self.window.iconphoto(False, tk.PhotoImage(file='input\\icon.png'))
+        self.window.iconphoto(False, tk.PhotoImage(file='input/icon.png'))
         self.window.bind('<Return>', self.enter_run)
         self.window.geometry('1000x200')
         # window.configure(background="gray")

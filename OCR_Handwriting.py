@@ -458,11 +458,11 @@ class WBImage:
 				if inp == "Y" or inp == "N":
 					valid = True
 			if inp == "Y":  # write image to training set folder
-				image_path = self.InputDir + '\\' + image_file
+				image_path = self.InputDir + '/' + image_file
 				imageTemp = cv2.imread(image_path)
-				trainDir = self.InputDir + '\\trainset'
+				trainDir = self.InputDir + '/trainset'
 				if not os.path.exists(trainDir): os.makedirs(trainDir)
-				image_path_out = trainDir + "\\" + image_file
+				image_path_out = trainDir + "/" + image_file
 				cv2.imwrite(image_path_out, imageTemp)
 				# build and scale feature matrix for words in current image, store in dataList and labelList
 				inpBool = True
@@ -550,7 +550,7 @@ class WBImage:
 			cv2.waitKey(0)
 
 		#lastly, save the image in the Output_Anno folder
-		out_file_name: str = outputAnnoDir + '\\' + re.search(r"(.*)\.", image_file).group(0)[:-1]
+		out_file_name: str = outputAnnoDir + '/' + re.search(r"(.*)\.", image_file).group(0)[:-1]
 		out_file_name += "_WB_Cropped_Anno.png"
 		cv2.imwrite(out_file_name, self.imageOutAnno)
 

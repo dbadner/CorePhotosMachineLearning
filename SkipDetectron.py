@@ -5,7 +5,7 @@ import os
 def skip_detectron(inputdir, outputWBDir, outputWBAnnoDir):
     outputList = []
     for image_file in os.listdir(outputWBDir):
-        image_path = outputWBDir + '\\' + image_file
+        image_path = outputWBDir + '/' + image_file
         img: np.ndarray = cv2.imread(image_path)
 
         if type(img) is np.ndarray:  # only process if image file

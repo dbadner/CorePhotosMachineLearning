@@ -1,0 +1,13 @@
+numpy
+opencv
+h5py==2.10
+tensorflow
+tk
+pillow
+cudatoolkit
+cython
+pycocotools
+detectron2
+imutils
+scikit-learn
+git-lfs
