@@ -1,4 +1,4 @@
-# pyOCR
+# pyOCR - Machine Learning Core Photograph Renaming Program
 Program for automatically renaming drill core photographs using machine learning algorithms to detect drill depths and other keywords handwritten on whiteboards. Includes a UI 
 for interactively stepping through photographs and easily making required modifications.
 
@@ -29,9 +29,11 @@ Double click 'RunProgram.bat' if the environment was setup using setup.bat above
 
 ## Notes on Using the Program
 ### Opening browse screen
+<img src=".images/OpeningBrowseScreen.png" width="300" >
 *	Select “Skip machine learning” if you do not want the program to attempt to name photographs for you, you just wish to quickly step through the photos and name them yourself using the program interface. Selecting this option will save you the time of waiting for the machine learning algorithms to compute.
 *	Process graphics using ‘GPU’ is recommended if you have an NVIDIA graphics card as computation times will be reduced. However selecting ‘GPU’ may cause your computer to crash if you do not have an NVIDIA graphics card and drivers installed. ‘CPU’ is therefore the default.
 ### Main program interface
+<img src=".images/OpeningBrowseScreen.png" width="300" >
 
 ### Guidance for core photographs for best machine learning algorithm results
 *	Best to make sure the white board is totally contained within the photograph
