@@ -1,69 +1,71 @@
-import Detectron2WBEval as wb
-import SkipDetectron as sd
-import FormBrowse as bws
-import FormUI as ui
-import OCR_Root as ocr
-import warnings
-import os
 import ctypes
+import os
+import warnings
+
+import Detectron2WBEval as Wb
+import FormBrowse as Bws
+import FormUI as Ui
+import OCR_Root as Ocr
+import SkipDetectron as Sd
 
 
 def main():
-    skipDetectron = False #skip detectron whiteboard recognition, default = false, for development
+    skip_detectron = False  # skip detectron whiteboard recognition, default = false, for development
 
     warnings.simplefilter(action='ignore', category=FutureWarning)
 
-    objBWS = bws.frmBrowse()
-    cpuMode = objBWS.cpuMode
-    skipML = objBWS.skipML
+    obj_bws = Bws.frmBrowse()
+    cpu_mode = obj_bws.cpuMode
+    skip_ml = obj_bws.skipML
 
-    #read in inputdirectory from user, and generate nested output directories if they do not yet exist
-    #inputdir = #r'inputimages'
-    inputdir = objBWS.ImagePath.get()
-    outputWBDir = inputdir + "/" + "Output_WB"
-    if not os.path.exists(outputWBDir): os.makedirs(outputWBDir)
-    outputAnnoDir = inputdir + "/" + "Output_Anno"
-    if not os.path.exists(outputAnnoDir): os.makedirs(outputAnnoDir)
-    outputWBAnnoDir = inputdir + "/" + "Output_WB_Anno"
-    if not os.path.exists(outputWBAnnoDir): os.makedirs(outputWBAnnoDir)
-    outputNamedDir = inputdir + "/" + "Output_Named_Images"
-    if not os.path.exists(outputNamedDir): os.makedirs(outputNamedDir)
+    # read in inputdirectory from user, and generate nested output directories if they do not yet exist
+    # inputdir = #r'inputimages'
+    inputdir = obj_bws.ImagePath.get()
+    output_wb_dir = inputdir + "/" + "Output_WB"
+    if not os.path.exists(output_wb_dir):
+        os.makedirs(output_wb_dir)
+    output_anno_dir = inputdir + "/" + "Output_Anno"
+    if not os.path.exists(output_anno_dir):
+        os.makedirs(output_anno_dir)
+    output_wb_anno_dir = inputdir + "/" + "Output_WB_Anno"
+    if not os.path.exists(output_wb_anno_dir):
+        os.makedirs(output_wb_anno_dir)
+    output_named_dir = inputdir + "/" + "Output_Named_Images"
+    if not os.path.exists(output_named_dir):
+        os.makedirs(output_named_dir)
 
-    cfOutput: list
-    if not skipML:
-        wbOutputList = []
-        errorCount = 0
-        if not skipDetectron:
+    cf_output: list
+    if not skip_ml:
+        wb_output_list = []
+        error_count = 0
+        if not skip_detectron:
             print("Reading in images and searching for white boards...")
-            objWB = wb.FindWhiteBoards(inputdir, outputWBDir, outputWBAnnoDir)
-            wbOutputList, errorCount = objWB.RunModel(True, True, cpuMode)
+            obj_wb = Wb.FindWhiteBoards(inputdir, output_wb_dir, output_wb_anno_dir)
+            wb_output_list, error_count = obj_wb.RunModel(True, True, cpu_mode)
 
-            #wbOutputList [image filename, image filepath, whiteboard output image filepath, annotated output image filepath]
+            # wb_output_list [image filename, image filepath, whiteboard output image filepath, annotated output image
+            # filepath]
 
         else:
-            #use what is already in the directory, for debugging
-            wbOutputList, errorCount = sd.skip_detectron(inputdir, outputWBDir, outputWBAnnoDir)
-        if errorCount > 0:
-            ctypes.windll.user32.MessageBoxW(0, "Warning: white board not found in {} image file(s). Refer to output in terminal for details.".format(errorCount), "Warning", 0)
+            # use what is already in the directory, for debugging
+            wb_output_list, error_count = Sd.skip_detectron(inputdir, output_wb_dir, output_wb_anno_dir)
+        if error_count > 0:
+            ctypes.windll.user32.MessageBoxW(0,
+                                             "Warning: white board not found in {} image file(s). "
+                                             "Refer to output in terminal for details.".format(
+                                                 error_count), "Warning", 0)
 
         print("Classifying text in photos...")
-        cfOutput = ocr.ocrRoot(wbOutputList, outputWBDir, outputAnnoDir)
+        cf_output = Ocr.ocrRoot(wb_output_list, output_wb_dir, output_anno_dir)
 
         print("Classification complete. Stepping through results interactively...")
     else:
-        #skipping machine learning part of program for efficiency, straight to UIForm
+        # skipping machine learning part of program for efficiency, straight to UIForm
         print("Skipping machine learning. Straight to user form to manually rename photos.")
-        cfOutput = ocr.readImagesRoot(inputdir)
+        cf_output = Ocr.readImagesRoot(inputdir)
 
-    objUI = ui.UIForm(outputWBDir, outputNamedDir, cfOutput, skipML)
+    obj_ui = Ui.UIForm(output_wb_dir, output_named_dir, cf_output, skip_ml)
 
-
-    #objTessWB = tesswb.TessFindWords(inputdir)
-    #objTessWB.RunTess(True, True) #, wbextents)
 
 if __name__ == '__main__':
     main()
-
-
-
-
