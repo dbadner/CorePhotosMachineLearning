@@ -57,5 +57,6 @@ Double click 'RunProgram.bat' if the environment was setup using setup.bat above
 *	Conversely do not leave too large of a gap between number characters, especially across the decimal place
 *	Do not include 'm' suffix on the actual depth values (i.e. have it in brackets on the line above instead)
 *	Must have keywords ‘DEPTH’ and/or 'FROM', and also 'WET' vs 'DRY', as the program searches for these
+
 Note: Examples of good photographs are included in the ‘ExamplePhotos’ directory.
 
