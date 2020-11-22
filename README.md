@@ -16,7 +16,7 @@ Overview of program steps under the hood:
 * Python==3.7
 * Numpy
 * Opencv
-* h5py==2.10.0 (Note: h5py 3.0 and up throws error)
+* h5py==2.10 (Note: h5py 3.0 and up throws error, this is a known h5py issue)
 * tensorflow
 * tk
 * pillow
@@ -28,7 +28,8 @@ Overview of program steps under the hood:
 * pycocotools (for Windows: pip install "git+https://github.com/philferriere/cocoapi.git#egg=pycocotools&subdirectory=PythonAPI")
 * detectron2 (for Windows: pip install "git+https://github.com/DGMaxime/detectron2-windows.git")
 
-## Instructions For Setup on Windows
+## Instructions For Setup 
+On Windows:
 1. Install anaconda: https://www.anaconda.com/products/individual
 2. Install C++ build tools: https://visualstudio.microsoft.com/visual-cpp-build-tools (run this program and install C++ build tools)
 3. Double click Setup.bat; this will create a new conda environment named ‘ml’ with python 3.7, will activate that environment, and will install necessary packages.
@@ -36,6 +37,11 @@ Overview of program steps under the hood:
 Note that the the setup installs git large file storage (gitlfs); this is needed to pull the whiteboard model named "wb_model.pth". Therefore the final command in the 
 batch Setup file is to pull this model with "git lfs pull", as the initial repository clone would not have grabbed this file if 
 gitlfs was not yet installed. 
+
+Notes for installing on Mac or Linux: 
+* Messageboxes throughout the code are currently configured for Windows (using ctypes package). This needs to be updated in 
+order to run on Mac or Linux
+* Make sure that the h5py version is less than 3.0
 
 ## To Run the Program
 Double click 'RunProgram.bat' if the environment was setup using setup.bat above. This activates the 'ml' conda environment and executes the python entry point into the program, 'Main.py'. Otherwise, 'python Main.py' in the terminal will run the program. 
