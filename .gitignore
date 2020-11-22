@@ -1,9 +1,9 @@
 wb_model/
 superseded/
 output/
-input/
 inputimages/
 roboflow/
 dist/
 build/
 ExamplePhotos/
+az_dataset/
