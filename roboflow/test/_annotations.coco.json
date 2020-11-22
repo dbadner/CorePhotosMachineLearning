@@ -1,0 +1,143 @@
+{
+    "info": {
+        "year": "2020",
+        "version": "2",
+        "description": "Exported from roboflow.ai",
+        "contributor": "",
+        "url": "https://app.roboflow.ai/datasets/coreboxwhiteboards2/2",
+        "date_created": "2020-09-27T02:18:25+00:00"
+    },
+    "licenses": [
+        {
+            "id": 1,
+            "url": "",
+            "name": "Unknown"
+        }
+    ],
+    "categories": [
+        {
+            "id": 0,
+            "name": "WB",
+            "supercategory": "none"
+        },
+        {
+            "id": 1,
+            "name": "WB",
+            "supercategory": "WB"
+        }
+    ],
+    "images": [
+        {
+            "id": 0,
+            "license": 1,
+            "file_name": "RC651_903_39-910_00_m_dry_JPG.rf.2138531b64b1dce56ceb5b891af5695e.jpg",
+            "height": 416,
+            "width": 416,
+            "date_captured": "2020-09-27T02:18:25+00:00"
+        },
+        {
+            "id": 1,
+            "license": 1,
+            "file_name": "RC644_0026_60-0029_60_m_2of6_WET_JPG.rf.84ce65b29b3d71caa4963e4f31c54b7b.jpg",
+            "height": 416,
+            "width": 416,
+            "date_captured": "2020-09-27T02:18:25+00:00"
+        },
+        {
+            "id": 2,
+            "license": 1,
+            "file_name": "RC651_179_00-182_00m_1of4_wet_JPG.rf.0678cfe07077943e763e77ed3a7112b3.jpg",
+            "height": 416,
+            "width": 416,
+            "date_captured": "2020-09-27T02:18:25+00:00"
+        },
+        {
+            "id": 3,
+            "license": 1,
+            "file_name": "RC635_166_06-172_04_m_wet_JPG.rf.47143b23f3bf454b2a45ed3e2e8c439f.jpg",
+            "height": 416,
+            "width": 416,
+            "date_captured": "2020-09-27T02:18:25+00:00"
+        },
+        {
+            "id": 4,
+            "license": 1,
+            "file_name": "RC651_929_23-935_68_m_dry_JPG.rf.bd334ecfeaea6ce06225a5c2448aa4ce.jpg",
+            "height": 416,
+            "width": 416,
+            "date_captured": "2020-09-27T02:18:25+00:00"
+        }
+    ],
+    "annotations": [
+        {
+            "id": 0,
+            "image_id": 0,
+            "category_id": 1,
+            "bbox": [
+                124,
+                5,
+                113.5,
+                108.5
+            ],
+            "area": 12314.75,
+            "segmentation": [],
+            "iscrowd": 0
+        },
+        {
+            "id": 1,
+            "image_id": 1,
+            "category_id": 1,
+            "bbox": [
+                18,
+                58,
+                202.5,
+                209
+            ],
+            "area": 42322.5,
+            "segmentation": [],
+            "iscrowd": 0
+        },
+        {
+            "id": 2,
+            "image_id": 2,
+            "category_id": 1,
+            "bbox": [
+                11,
+                2,
+                221,
+                227.5
+            ],
+            "area": 50277.5,
+            "segmentation": [],
+            "iscrowd": 0
+        },
+        {
+            "id": 3,
+            "image_id": 3,
+            "category_id": 1,
+            "bbox": [
+                172,
+                273,
+                133,
+                137.5
+            ],
+            "area": 18287.5,
+            "segmentation": [],
+            "iscrowd": 0
+        },
+        {
+            "id": 4,
+            "image_id": 4,
+            "category_id": 1,
+            "bbox": [
+                127,
+                0,
+                113,
+                107
+            ],
+            "area": 12091,
+            "segmentation": [],
+            "iscrowd": 0
+        }
+    ]
+}

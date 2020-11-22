@@ -2,7 +2,6 @@ wb_model/
 superseded/
 output/
 inputimages/
-roboflow/
 dist/
 build/
 ExamplePhotos/

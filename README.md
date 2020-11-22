@@ -2,6 +2,16 @@
 Program for automatically renaming drill core photographs using machine learning algorithms to detect drill depths and other keywords handwritten on whiteboards. Includes a UI 
 for interactively stepping through photographs and easily making required modifications.
 
+Basic program pipeline: 
+* Opening browse user interface for selection of directory containing core photographs.
+* Detectron2 trained model to detect and isolate the whiteboard in the photos.
+* CV2 contouring to isolate handwritten characters on whiteboard.
+* TensorFlow trained neural network to classify the handwritten text characters as alpha-numeric.
+* Coded algorithms to group characters into words, and to identify keywords "DEPTH", "FROM", and "WET" vs "DRY".
+* ScikitLearn logistic regression model to select the correct two words as numbers. 
+* TensorFLow trained neural network to classify the characters in the two numbers as numeric-only.
+* Main program user interface to step through named photographs interactively. 
+
 ## Requirements
 * Python 3.7
 * Numpy
