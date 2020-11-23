@@ -81,3 +81,9 @@ Subdirectories:
 * roboflow: contains the json files needed for the whiteboard detection model.
 * supplementary code: contains the python source code created for training models, not needed to run the 
 program with the models as-is but needed to updated the models.
+
+## Additional Resources
+Labelled training datasets for some of the models trained in this program are too large for github and are saved on Dropbox:
+* MNist (number) + kaggle (letter) labelled csv dataset: https://www.dropbox.com/s/qim1dvixoecg1pe/a_z_handwritten_data.csv.gz?dl=0
+* Photograph whiteboard labelled image dataset: https://www.dropbox.com/s/nj05chrd204xh2e/Core%20Photo%20Labelling.tar.gz?dl=0
+* Word number classification dataset (and previous version backups): https://www.dropbox.com/s/ftacczkfslpu42z/WordNum%20Dataset%20Backup.tar.gz?dl=0
