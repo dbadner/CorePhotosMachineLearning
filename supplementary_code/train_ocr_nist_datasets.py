@@ -210,5 +210,5 @@ for i in np.random.choice(np.arange(0, len(testY)), size=(49,)):
 # construct the montage for the images
 montage = build_montages(images, (96, 96), (7, 7))[0]
 # show the output montage
-cv2.imshow("OCR Results", montage)
+cv2.imshow("ocr Results", montage)
 cv2.waitKey(0)

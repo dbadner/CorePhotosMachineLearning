@@ -132,5 +132,5 @@ Y_probout = np.vstack((y_pred_prob, y_trainpred_prob))
 outArr = np.hstack((np.stack((Y_in, Y_out), axis=1), Y_probout, X_inv))
 
 outList = outArr.tolist()
-fn.OutputToCSV("TrainedCSVOut.csv", outList)
+fn.output_to_csv("TrainedCSVOut.csv", outList)
 xxx = 1

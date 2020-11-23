@@ -14,7 +14,7 @@ def main():
 
     warnings.simplefilter(action='ignore', category=FutureWarning)
 
-    obj_bws = Bws.frmBrowse()
+    obj_bws = Bws.FrmBrowse()
     cpu_mode = obj_bws.cpuMode
     skip_ml = obj_bws.skipML
 
@@ -41,7 +41,7 @@ def main():
         if not skip_detectron:
             print("Reading in images and searching for white boards...")
             obj_wb = Wb.FindWhiteBoards(inputdir, output_wb_dir, output_wb_anno_dir)
-            wb_output_list, error_count = obj_wb.RunModel(True, True, cpu_mode)
+            wb_output_list, error_count = obj_wb.run_model(True, True, cpu_mode)
 
             # wb_output_list [image filename, image filepath, whiteboard output image filepath, annotated output image
             # filepath]
@@ -56,13 +56,13 @@ def main():
                                                  error_count), "Warning", 0)
 
         print("Classifying text in photos...")
-        cf_output = Ocr.ocrRoot(wb_output_list, output_wb_dir, output_anno_dir)
+        cf_output = Ocr.ocr_root(wb_output_list, output_wb_dir, output_anno_dir)
 
         print("Classification complete. Stepping through results interactively...")
     else:
         # skipping machine learning part of program for efficiency, straight to UIForm
         print("Skipping machine learning. Straight to user form to manually rename photos.")
-        cf_output = Ocr.readImagesRoot(inputdir)
+        cf_output = Ocr.read_images_root(inputdir)
 
     obj_ui = Ui.UIForm(output_wb_dir, output_named_dir, cf_output, skip_ml)
 

@@ -1,13 +1,10 @@
 # Code modified from: https://towardsdatascience.com/understanding-detectron2-demo-bc648ea569e5
-#trained model to find whiteboards in photographs using detectron2
+# trained model to find whiteboards in photographs using detectron2
 import warnings
-#warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.filterwarnings('ignore')
-
 import cv2
 import numpy as np
 import re
-#from detectron2.engine import DefaultPredictor
 from detectron2 import model_zoo
 from detectron2.config import get_cfg, CfgNode
 from detectron2.data import MetadataCatalog
@@ -16,6 +13,7 @@ from detectron2.structures import Instances
 from detectron2.utils.visualizer import Visualizer, VisImage
 import os
 from detectron2.data.datasets import register_coco_instances
+
 
 class FindWhiteBoards:
     # class variables
@@ -29,33 +27,33 @@ class FindWhiteBoards:
         self.OutputWBDir = outputWBDir
         self.OutputWBAnnoDir = outputWBAnnoDir
 
-    def RegisterDataset(self):
+    def register_dataset(self):
         # register the training dataset, only need to do this once
-        catalogList = MetadataCatalog.list()
-        if 'wb_train' not in catalogList:
+        catalog_list = MetadataCatalog.list()
+        if 'wb_train' not in catalog_list:
             register_coco_instances("wb_train", {}, "roboflow/train/_annotations.coco.json", "/roboflow/train")
-        if 'wb_val' not in catalogList:
+        if 'wb_val' not in catalog_list:
             register_coco_instances("wb_val", {}, "roboflow/valid/_annotations.coco.json", "/roboflow/valid")
-        if 'wb_test' not in catalogList:
+        if 'wb_test' not in catalog_list:
             register_coco_instances("wb_test", {}, "roboflow/test/_annotations.coco.json", "/roboflow/test")
 
-    def RunModel(self, saveCropOutput: bool, saveAnnoOutput: bool, cpuMode: bool):
-        #set to CPU mode if system does not have NVIDIA GPU
-        outputList = []
+    def run_model(self, save_crop_output: bool, save_anno_output: bool, cpu_mode: bool):
+        # set to CPU mode if system does not have NVIDIA GPU
+        output_list = []
 
-        self.RegisterDataset()
+        self.register_dataset()
 
         cfg = get_cfg()
         cfg.merge_from_file(model_zoo.get_config_file("COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml"))
         cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.9
         cfg.MODEL.WEIGHTS = "wb_model.pth"
         cfg.MODEL.ROI_HEADS.NUM_CLASSES = 2
-        if cpuMode:
+        if cpu_mode:
             cfg.MODEL.DEVICE = 'cpu'
         predictor = DefaultPredictor(cfg)
-        errorCount: int = 0
+        error_count: int = 0
 
-        #print("Model imported: {:.3f}".format(time.time() - t0))
+        # print("Model imported: {:.3f}".format(time.time() - t0))
 
         # image_file = "input/RC663_0040.76-0047.60_m_DRY.jpg"
 
@@ -63,7 +61,7 @@ class FindWhiteBoards:
             image_path = self.InputDir + '/' + image_file
             img: np.ndarray = cv2.imread(image_path)
 
-            #print("Processing file: {:.3f}".format(time.time() - t0))
+            # print("Processing file: {:.3f}".format(time.time() - t0))
 
             if type(img) is np.ndarray:  # only process if image file
                 print("Processing image: " + image_file)
@@ -99,16 +97,15 @@ class FindWhiteBoards:
 
                 if len(scores) > 0:
                     box: np.ndarray = obj['pred_boxes'].tensor.cpu().numpy()[indmaxscore]
-                    #box = box * wRatio
+                    # box = box * wRatio
                 else:
                     box = np.ones(1) * (-1)
 
                 # outputlist.append(output)
-                #outputDict[image_file] = box
-
+                # outputDict[image_file] = box
 
                 anno_out_filename = ""
-                if saveAnnoOutput:
+                if save_anno_output:
                     # draw output and save to png
                     v = Visualizer(img[:, :, ::-1], MetadataCatalog.get("wb_test"), scale=1.0)
                     result: VisImage = v.draw_instance_predictions(output.to("cpu"))
@@ -125,7 +122,7 @@ class FindWhiteBoards:
 
                     # cv2.waitKey(0)
                 if len(scores) > 0:
-                    if saveCropOutput:
+                    if save_crop_output:
                         # crop and save the image
                         # https://www.pyimagesearch.com/2014/01/20/basic-image-manipulations-in-python-and-opencv-resizing-scaling-rotating-and-cropping/
                         crop_img = img[box[1].astype(int):box[3].astype(int), box[0].astype(int):box[2].astype(int)]
@@ -133,11 +130,11 @@ class FindWhiteBoards:
                         out_file_name: str = self.OutputWBDir + '/' + re.search(r"(.*)\.", image_file).group(0)[:-1]
                         out_file_name += "_WB_Cropped.png"
                         cv2.imwrite(out_file_name, crop_img)
-                        #add to the outputDictionary
-                        #outputDict[image_file] = (out_file_name, anno_out_filename)
-                        outputList.append((image_file, image_path, out_file_name, anno_out_filename))
+                        # add to the outputDictionary
+                        # outputDict[image_file] = (out_file_name, anno_out_filename)
+                        output_list.append((image_file, image_path, out_file_name, anno_out_filename))
                 else:
                     print("WARNING: WHITE BOARD NOT FOUND IN IMAGE FILE: " + image_file + ". SKIPPING IMAGE.")
-                    errorCount += 1
+                    error_count += 1
 
-        return outputList, errorCount
+        return output_list, error_count

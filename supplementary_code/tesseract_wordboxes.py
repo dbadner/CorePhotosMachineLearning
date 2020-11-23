@@ -7,8 +7,8 @@ import cv2
 import os
 import numpy as np
 
-pytesseract.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract'
-TESSDATA_PREFIX = 'C:/Program Files/Tesseract-OCR'
+pytesseract.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-ocr/tesseract'
+TESSDATA_PREFIX = 'C:/Program Files/Tesseract-ocr'
 
 
 class TessFindWords:
@@ -27,7 +27,7 @@ class TessFindWords:
         # ap = argparse.ArgumentParser()
         # hack temporary hard code for debugging
         # ap.add_argument("-i", "--image", required=False, default="input/17316.png",
-        #                help="path to input image to be OCR'd")
+        #                help="path to input image to be ocr'd")
         # ap.add_argument("-p", "--preprocess", type=str, default="stdout",
         #                help="type of preprocessing to be done")
         # args = vars(ap.parse_args())
@@ -65,7 +65,7 @@ class TessFindWords:
 
 
                 # write the grayscale image to disk as a temporary file so we can
-                # apply OCR to it
+                # apply ocr to it
                 filename = "{}.png".format(os.getpid())
                 cv2.imwrite(filename, gray)
 
@@ -169,7 +169,7 @@ class TessFindWords:
 """psm tesseract options:
 0 = Orientation and script detection (OSD) only.
 1 = Automatic page segmentation with OSD.
-2 = Automatic page segmentation, but no OSD, or OCR. (not implemented)
+2 = Automatic page segmentation, but no OSD, or ocr. (not implemented)
 3 = Fully automatic page segmentation, but no OSD. (Default)
 4 = Assume a single column of text of variable sizes.
 5 = Assume a single uniform block of vertically aligned text.
