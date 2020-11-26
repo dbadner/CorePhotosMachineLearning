@@ -9,7 +9,7 @@ Overview of program steps under the hood:
 * TensorFlow trained neural network to classify the handwritten text characters as alpha-numeric
 * Coded algorithms to group characters into words, and to identify keywords "DEPTH", "FROM", and "WET" vs "DRY"
 * ScikitLearn logistic regression model to select the correct two words as numbers
-* TensorFlow trained neural network to classify the characters in the two numbers as numeric-only
+* Keras trained neural network to classify the characters in the two numbers as numeric-only
 * Main program user interface to step through named photographs interactively
 
 ## Requirements
