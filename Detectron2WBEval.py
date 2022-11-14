@@ -53,35 +53,12 @@ class FindWhiteBoards:
         predictor = DefaultPredictor(cfg)
         error_count: int = 0
 
-        # print("Model imported: {:.3f}".format(time.time() - t0))
-
-        # image_file = "input/RC663_0040.76-0047.60_m_DRY.jpg"
-
         for image_file in os.listdir(self.InputDir):
             image_path = self.InputDir + '/' + image_file
             img: np.ndarray = cv2.imread(image_path)
 
-            # print("Processing file: {:.3f}".format(time.time() - t0))
-
             if type(img) is np.ndarray:  # only process if image file
                 print("Processing image: " + image_file)
-
-                """
-                # resize image to save on computation time
-                dW = 100  # desired width
-
-                imgRe: np.ndarray
-                # if img.ndim == 2:  # black and white
-                #    (tH, tW) = img.shape
-                # else:  # colour
-                (tH, tW, tmp) = img.shape
-                if tW > dW:
-                    imgRe = imutils.resize(img, width=dW)  # resize the image
-                    wRatio = tW / dW
-                else:
-                    imgRe = img.copy()
-                    wRatio = 1
-                """
 
                 output: Instances = predictor(img)["instances"]  # predict
 
@@ -97,12 +74,8 @@ class FindWhiteBoards:
 
                 if len(scores) > 0:
                     box: np.ndarray = obj['pred_boxes'].tensor.cpu().numpy()[indmaxscore]
-                    # box = box * wRatio
                 else:
                     box = np.ones(1) * (-1)
-
-                # outputlist.append(output)
-                # outputDict[image_file] = box
 
                 anno_out_filename = ""
                 if save_anno_output:
@@ -116,11 +89,6 @@ class FindWhiteBoards:
                     anno_out_filename += "_WB_Anno.png"
                     cv2.imwrite(anno_out_filename, result_image)
 
-                    # code for displaying image:
-                    # imgout = cv2.imread(out_file_name)
-                    # cv2.imshow('Output Image', imgout)
-
-                    # cv2.waitKey(0)
                 if len(scores) > 0:
                     if save_crop_output:
                         # crop and save the image
@@ -130,8 +98,7 @@ class FindWhiteBoards:
                         out_file_name: str = self.OutputWBDir + '/' + re.search(r"(.*)\.", image_file).group(0)[:-1]
                         out_file_name += "_WB_Cropped.png"
                         cv2.imwrite(out_file_name, crop_img)
-                        # add to the outputDictionary
-                        # outputDict[image_file] = (out_file_name, anno_out_filename)
+                        # add to the output list
                         output_list.append((image_file, image_path, out_file_name, anno_out_filename))
                 else:
                     print("WARNING: WHITE BOARD NOT FOUND IN IMAGE FILE: " + image_file + ". SKIPPING IMAGE.")
