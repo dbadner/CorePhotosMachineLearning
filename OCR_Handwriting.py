@@ -3,8 +3,6 @@
 # import the necessary packages
 # handle warnings
 import warnings
-
-# warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.filterwarnings('ignore')
 import os
 
@@ -65,7 +63,6 @@ class WBImage:
         self.wetDry = ""
         self.wetDryP = 0.0
 
-    # self.objFn = fn.Functions()
 
     def build_key_word_list(self):
         self.keyWordList = []
@@ -81,34 +78,20 @@ class WBImage:
         # convert image to grayscale, and blur it to reduce noise
         self.gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
         self.gray = cv2.threshold(self.gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
-        # gray = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_TRIANGLE)[1]
-        # gray = cv2.GaussianBlur(gray, (5, 5), 0)
         # Applied dilation
         kernel3 = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
         self.gray = cv2.morphologyEx(self.gray, cv2.MORPH_ERODE, kernel3)
 
-    # grayS = self.resize_image(gray, 800, 800)
-    # cv2.imshow("Preprocessed", grayS)
-    # cv2.waitKey(0)
-    # return gray
-
     def find_chars_words(self):
         # perform edge detection, find contours in the edge map, and sort the
         # resulting contours from left-to-right, find words
-        # fac = 2 #factor by which to temporarily upscale images to improve edge detection
-        # tH, tW = gray.shape
-        # imgTmp = self.resize_image(gray, tW * fac, tH * fac) #temporarily upsize by fac to make edge detection work better
 
         edged = cv2.Canny(self.gray, 30, 150)
-        # cv2.imshow("padded", edged)
-        # cv2.waitKey(0)
         cnts = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # cv2.CHAIN_APPROX_NONE)
         cnts = imutils.grab_contours(cnts)
         cnts = sort_contours(cnts, method="left-to-right")[0]
         # initialize the list of contour bounding boxes and associated
-        # cnts = cnts / fac
         # characters that we'll be ocr'ing
-        # chars = []  # pairs of character images and dimensions
         # loop over the contours and populate if they pass the criteria
         self.process_chars(cnts)
         return
@@ -116,15 +99,13 @@ class WBImage:
     def process_chars(self, cnt):
         # function takes in image and contour and filters the characters to those within words,
         # and those with appropriate sizes, and adjusts white space
-        # charList = []  # pairs of character images and dimensions
-        # charDict = {} #charID, ndarray[28x28x1] image, (x,y,w,h) of original image
+
         for i in range(len(cnt)):
             c = cnt[i]
             # compute the bounding box of the contour
             (x, y, w, h) = cv2.boundingRect(c)
             # filter out bounding boxes, ensuring they are neither too small
             # nor too large
-            # if (w >= 5 and w <= 150) and (h >= 8 and h <= 120):
             if (5 <= w <= 375) and (5 <= h <= 300) and w / h < 22 and h / w < 22:
 
                 # extract the character and threshold it to make the character
@@ -145,9 +126,6 @@ class WBImage:
                 padded = cv2.copyMakeBorder(thresh, top=dY, bottom=dY, left=dX, right=dX,
                                             borderType=cv2.BORDER_CONSTANT, value=(0, 0, 0))
                 padded = cv2.resize(padded, (28, 28))
-                # cv2.imshow("padded", padded)
-                # cv2.waitKey(0)
-                # print("{}, {}".format(w, h))
                 # prepare the padded image for classification via our
                 # handwriting ocr model
                 padded = padded.astype("float32") / 255.0
@@ -158,17 +136,12 @@ class WBImage:
                     small_char_filt = True
                 self.charList.append(Character(padded, (x, y, w, h), False, small_char_filt,
                                                False))  # update our list of characters that will be ocr'd
-        # charDict[i] = (padded, (x, y, w, h))
 
         # check each character to make sure not overlapping with an another character, discard if so
-        # remove_list = []
         remove_list = self.check_overlap()
         for i in remove_list:
             self.charList[i].OvlFilt = True
-        # for i in range(len(remove_list)-1,-1,-1):
-        # del chars[remove_list[i]]
 
-        # wordList = []
         # now loop through chars and perform checks, assign to words
         for i, char in enumerate(self.charList):
             if not char.OvlFilt:
@@ -201,7 +174,6 @@ class WBImage:
                     new_word.charList = [i]
                     self.wordList.append(new_word)
                     char.InWord = True
-            # wordList.append((char[1],[i])) #add dimensions of first character and charID to the wordlist
 
         # now loop back through words and reassess first character vs second character spacing (skipped before)
         nnn = 0
@@ -225,18 +197,12 @@ class WBImage:
                 self.charList[words.charList[0]].InWord = False  # change back to false, no longer in a word
                 del self.wordList[i]
 
-    # else:#check for overlapping characters and remove from word if so
-    # removeList = self.check_overlap(chars)
-    # for i in range(len(removeList) - 1, -1, -1):
-    # del chars[removeList[i]]
-
     # return charList, wordList
 
     def update_word_vals(self, word):
         # function iterates through word parameters and updates values
 
         (xW, yW, wW, hW) = self.charList[word.charList[0]].Dims  # initialize word values to first character values
-        # xW = self.charList[word.charList[0]].Dims[0]
         wW = self.charList[word.charList[len(word.charList) - 1]].Dims[2] + \
              self.charList[word.charList[len(word.charList) - 1]].Dims[0] - xW
 
@@ -285,8 +251,6 @@ class WBImage:
         if ht_ratio > 2.5 or ht_ratio < 0.3:  # thresholds for height ratios
             return False
         if not (len(word.charList) <= 3 or (len(word.charList) > 2 and self.check_mean_spacing(xW + wW, x, word))):
-            # (max(xDif, 0) - word.avgCharSpac) / hW < .4)):
-            # check space between characters relative to mean space
             return False
         # final check - look for a change in average spacing between characters in a word
         else:
@@ -298,30 +262,23 @@ class WBImage:
         # Returns True if spacing criteria is okay, false is failed (i.e. too large spacing)
         # variables: x2 - left of second character, x1 - right of first character, word = current word, cutoff is
         # cutoff value
-        # hW = word.avgCharH #word.dims[4]
         cutoff = 0.4
         ret = (max(x2 - x1, 0) - word.avgCharSpac) / word.avgCharH < cutoff
         return ret
 
     def check_overlap(self):
         # check each character to make sure not overlapping with an another character
-        # chars [ndarray[28x28x1], (x,y,w,h)] - list of characters
         remove_list = []
         for i, charI in enumerate(self.charList):
-            # charI = chars[i]
             (x, y, w, h) = charI.Dims  # read in character dimensions
             discard: bool = False
             for j, charJ in enumerate(self.charList):
                 if j == i:
                     continue
-                # charJ = chars[j]
                 (xC, yC, wC, hC) = charJ.Dims  # read in character dimensions
-                # xFuz = wC * 0.1 #if over 60% overlap in x and y then remove
-                # yFuz = hC * 0.1
                 if w * h <= wC * hC:  # only discard the smaller of the two
                     if ((xC < x < xC + wC) or (xC < x + w < xC + wC)) and \
                             ((yC < y < yC + hC) or (yC < y + h < yC + hC)):
-                        # if x > xC - xFuz and x + w < xC + wC + xFuz and y > yC - yFuz and y + h < yC + hC + yFuz:
                         # there is overlap, determine how much as proportion of smaller item
                         a_ovl = (min(x + w, xC + wC) - max(x, xC)) * (min(y + h, yC + hC) - max(y, yC))
                         perc_ovl = a_ovl / (w * h)
@@ -337,16 +294,12 @@ class WBImage:
         # function level variables
         # define the list of label names
         img_anno = self.image.copy()  # make a local copy of coloured image
-        # probNumList = []  # list corresponding to wordList indices with probability of number
-        # wordCharList = []  # list of character arrays in words corresponding to wordList
 
         dry_ind = 3
         wet_ind = 4
         keyword_prob_min = 0.5  # if < 50% then ignore keyword
 
         # extract the bounding box locations and padded characters
-        # boxes = [b[1] for b in chars]
-        # chars = np.array([c[0] for c in chars], dtype="float32")
         boxes = [b.Dims for b in self.charList]
         image_data = np.array([c.Data for c in self.charList], dtype="float32")
         # ocr the characters using our handwriting recognition model
@@ -355,14 +308,12 @@ class WBImage:
 
         # loop over the predictions and bounding box locations together
         for n, (pred, (x, y, w, h)) in enumerate(zip(preds, boxes)):
-            # for (x, y, w, h) in boxes:
             # find the index of the label with the largest corresponding
             # probability, then extract the probability and label
             i = np.argmax(pred)
             prob = pred[i]
             label = self.LabelNames[i]
             # draw the prediction on the image
-            # print("[INFO] {} - {:.2f}%".format(label, prob * 100))
             if self.DevelopMode:  # only show cv2 image if in develop mode
                 cv2.rectangle(img_anno, (x, y), (x + w, y + h), (0, 255, 0), 2)
                 if self.charList[n].OvlFilt == False and self.charList[n].SmallFilt == False:
@@ -371,37 +322,28 @@ class WBImage:
         if self.DevelopMode:  # only show cv2 image if in develop mode
             # loop over words, draw rectangle around
             for wInd, words in enumerate(self.wordList):
-                # if len(words[1]) > 1: #show wordBoxes if > 1 character
                 (x, y, w, h) = words.dims
                 cv2.rectangle(img_anno, (x, y), (x + w, y + h), (255, 0, 255), 2)  # rectangle around word
 
             # show the image
             image_s = fn.resize_image(img_anno, 800, 800)
             cv2.imshow("Image", image_s)
-            # grayS = self.resize_image(gray, 800, 800)
-            # cv2.imshow("Gray", grayS)
             cv2.waitKey(0)
 
         # loop over words again
         for wInd, words in enumerate(self.wordList):
             prob_num = 0  # probability that word contains a number
             word_chars = []  # list of character indices in word
-            # wordCharsText = [] #list of characters in word
             # loop over characters in word and determine probability of #,
             for i in words.charList:  # for each ith character
                 prob = preds[i]
                 for j in range(10):  # loop through probability of number characters
                     prob_num += prob[j]
-                # prob_num /= 10
                 word_chars.append(self.LabelNames[np.argmax(preds[i])])
-            # store the max likelihood character in wordCharList
-            # wordCharsText.append
 
             prob_num /= len(words.charList)
             words.probNum = prob_num
             words.wordCharList = word_chars
-            # probNumList.append(prob_num)
-            # wordCharList.append(word_chars)
 
             # check probability of being a keyword
             for k in self.keyWordList:
@@ -480,17 +422,11 @@ class WBImage:
                 # build and scale feature matrix for words in current image, store in data_list and label_list
                 inp_bool = True
 
-        # data_list = []
-        # label_list = []
-        # punct_id_list = []
         (tH, tW) = self.gray.shape
         data_list, label_list, punct_id_list = self.build_feature_matrix(inp_bool, tH, tW, self.imageOutAnno,
                                                                          keyword_prob_min)
         if self.TrainingMode and inp_bool:  # write to training set csv if trainingmode enabled and user specified 'y'
             self.save_update_training_set_csv('depth_train_dataset.csv', image_file, data_list, label_list)
-
-        # Don't run SVM if in training mode, temporarily
-        # if not self.TrainingMode:
 
         y_result = self.run_word_num_svm_model(
             data_list)  # output from 1 to 0 representing likelihood of being a number
@@ -504,7 +440,6 @@ class WBImage:
                 print(output)
 
             # check if most or second most likely, store if so
-            # for n in range(len(y_max_ind)):
             if y[1] > y_max[0]:
                 y_max[1] = y_max[0]
                 y_max_ind[1] = y_max_ind[0]
@@ -600,15 +535,6 @@ class WBImage:
 
         # obtain feature vector for each word
         for n, word in enumerate(self.wordList):
-
-            # img = image.copy()
-            # (x, y, w, h) = word.dims
-            # cv2.rectangle(img, (x, y), (x + w, y + h), (0, 176, 240), 2)
-            # image_s = self.resize_image(img, 800, 800)
-            # cv2.imshow("Keywords Image", image_s)
-            # cv2.waitKey(0)
-
-            # ex_param = np.zeros(1, n_feat)
             x_dist, y_dist = self.find_closest_keyword(word, tH, tW, keyword_prob_min)
             p_numb = word.probNum
             punct, punct_id = self.find_punctuation(word)
@@ -618,7 +544,6 @@ class WBImage:
             height = self.find_rel_height(word, max_ht)
 
             datarow = np.array([x_dist, y_dist, p_numb, punct, num_chars, height], dtype="float32")
-            # datarow = np.zeros(1, n_feat, dtype="float32")
             data.append(datarow)
 
             if labeldata:  # interactive user data labelling
@@ -687,8 +612,6 @@ class WBImage:
                     hMinDif = hdif  # assign if closer
                     xMinDif = xdif
                     yMinDif = ydif
-            # if abs(xdif) < abs(xMinDif): xMinDif = xdif  # assign if closer
-            # if abs(ydif) < abs(yMinDif): yMinDif = ydif  # assign if closer
         # scale
         xMinDif /= tW
         yMinDif /= tH
@@ -752,7 +675,6 @@ class WBImage:
         data = np.array(data_list, dtype="float32")
         data = scaler.transform(data)
 
-        # yval = model.predict(data) #1 if number, 0 if not
         yval_prob = model.predict_proba(data)
 
         return yval_prob
