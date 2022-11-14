@@ -16,7 +16,6 @@ class FrmBrowse:
         self.window.iconphoto(False, tk.PhotoImage(file='input/icon.png'))
         self.window.bind('<Return>', self.enter_run)
         self.window.geometry('1000x200')
-        # window.configure(background="gray")
         self.ImagePath = tk.StringVar()
         self.skipML = False
         self.ImagePathStr = ""
@@ -57,7 +56,6 @@ class FrmBrowse:
         self.ImagePath.set(word)
 
     def run_button(self):
-
         if not os.path.exists(self.ImagePath.get()):
             err_str = "Error: Directory does not exist. Please select an existing directory containing your " \
                       "photographs."
