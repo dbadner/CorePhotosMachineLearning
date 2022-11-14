@@ -11,6 +11,5 @@ def skip_detectron(inputdir, output_wb_dir, output_wb_anno_dir):
 
         if type(img) is np.ndarray:  # only process if image file
             output_list.append((image_file, image_path, image_path, image_path))
-            # wbOutputList [image filename, image filepath, whiteboard output image filepath, annotated output image filepath]
 
     return output_list, 0 #error count = 0
