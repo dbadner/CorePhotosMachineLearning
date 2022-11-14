@@ -47,8 +47,6 @@ class UIForm:
         self.window.iconphoto(False, tk.PhotoImage(file='input/icon.png'))
         self.window.geometry('1100x600')
         self.window.bind('<Return>', self.enter_run)
-        # window.geometry('1200x800')
-        # window.configure(background="gray")
         # declare stringvars corresponding to entries
 
         self.InputPhotoName = tk.StringVar()
@@ -105,9 +103,6 @@ class UIForm:
         # default units to 'm'
         self.Unitsstr.set("m")
 
-        # for i in range(5):
-        # ttk.Entry(width=20).grid(row=i + 1, column=2)
-        # ent.pack(side = RIGHT, expand = YES, fill = X)
         # add buttons
         B3 = ttk.Button(text="Use Previous Depths", command=self.apply_prev_depths)
         B3.place(x=235, y=108)
@@ -142,15 +137,6 @@ class UIForm:
         self.canvas1 = Canvas(self.window, height=cvh, width=cvw)  # dims[0], width = dims[1])
         self.canvas1.place(x=xdim[2], y=10 + 20)
 
-        # store in tuple for reference later
-        # self.canvasesTup = (self.canvas1, self.canvas2)
-
-        # open image in CV2 format
-        # image = cv2.imread(r'input/RC635_166.06-172.04_m_wet.JPG')
-        # place annotated detectron image into canvas1
-        # imgTK = self.image_into_canvas(self.WBOutputList[self.OutputListInd[3]])
-        # self.canvas1.create_image(0, 0, anchor=NW, image=imgTK)
-
         # add trace to entry fields
         for txt, obj, W, S in self.stringVarList:
             obj.trace_add('write', self.update_f_name)
@@ -164,7 +150,6 @@ class UIForm:
         # read in appropriate images
         # first, read in the annotated core photo as CV2, then resize and convert
 
-        # image = cv2.imread(self.WBOutputList[self.OutputListInd][3])
         image = cv2.imread(cfobj.ImgWBAnnoFilePath)
         self.imgTK = self.image_into_canvas(image)
         self.canvas1.create_image(0, 0, anchor=NW, image=self.imgTK)
@@ -219,8 +204,6 @@ class UIForm:
 
     def image_into_canvas(self, image):
         # function takes image in CV2 format, converts to PIL image, and places in canvas identified by canvind
-        # image = Image.open(r'input/RC635_166.06-172.04_m_wet.JPG')
-        # wb = hw.WBImage("")
         cvw = 800
         cvh = 250
         if self.SkipML:
@@ -230,8 +213,6 @@ class UIForm:
         dims = image.shape
         impil = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))  # make PIL image
         photo = ImageTk.PhotoImage(impil)
-        # img = PhotoImage(photo)
-        # self.canvasesTup[canvind].create_image(0, 0, anchor=NW, image=photo)
         return photo
 
     def update_f_name(self, var, indx, mode):
@@ -244,13 +225,10 @@ class UIForm:
         if len(fname) > 0:  # remove final underscore
             fname = fname[0:len(fname) - 1]
         self.fileNameEntry.insert(0, fname)
-        # self.FileNamestr.set(self.BHIDstr.get()+"TEST")
 
     def accept_button(self):
 
         # save current image, and then move onto the next image
-        # self.Result = 0
-        # self.OutputPhotoFileName = ""
         # save the image as a copy in the output directory
         temp, suffix = os.path.splitext(self.CFOutputList[self.OutputListInd].ImgFileName)
         new_name = self.OutputDir + "/" + self.FileNamestr.get() + suffix
@@ -271,16 +249,12 @@ class UIForm:
 
     def enter_run(self, obj):
         # obj is the object returned when the enter key is pressed to enter this function. not used
-
         self.accept_button()
 
     def skip_button(self):
         # do not save current image, and then move onto the next image
-        # self.Result = 1
-        # self.OutputPhotoFileName = ""
         self.reset_fields()
         self.next_photo()
-        # self.window.destroy()
 
     def reset_fields(self):
         # called to clean fields in between photo iterations
