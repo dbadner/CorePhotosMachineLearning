@@ -27,10 +27,7 @@ def resize_image(img, max_w, max_h):
 
 def output_to_csv(fname, data_list):
     # function outputs dataset to CSV
-    # check if file exists:
-    # exists = os.path.exists(fname)
     writemode = 'w'
-    # if exists: writemode = 'a'
     with open(fname, writemode) as csvfile:
         filewriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
         for dataLine in data_list:
