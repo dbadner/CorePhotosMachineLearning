@@ -19,7 +19,6 @@ def main():
     skip_ml = obj_bws.skipML
 
     # read in inputdirectory from user, and generate nested output directories if they do not yet exist
-    # inputdir = #r'inputimages'
     inputdir = obj_bws.ImagePath.get()
     output_wb_dir = inputdir + "/" + "Output_WB"
     if not os.path.exists(output_wb_dir):
@@ -42,10 +41,6 @@ def main():
             print("Reading in images and searching for white boards...")
             obj_wb = Wb.FindWhiteBoards(inputdir, output_wb_dir, output_wb_anno_dir)
             wb_output_list, error_count = obj_wb.run_model(True, True, cpu_mode)
-
-            # wb_output_list [image filename, image filepath, whiteboard output image filepath, annotated output image
-            # filepath]
-
         else:
             # use what is already in the directory, for debugging
             wb_output_list, error_count = Sd.skip_detectron(inputdir, output_wb_dir, output_wb_anno_dir)
