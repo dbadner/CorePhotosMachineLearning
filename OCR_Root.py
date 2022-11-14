@@ -36,8 +36,6 @@ def ocr_root(wb_list, input_dir, output_anno_dir):
             cfobj = CfOutputObj(wb[0], wb[1], wb[3], wb_anno_out_path, wbimage.depthFrom, wbimage.depthTo,
                                 wbimage.wetDry, wbimage.depthFromP, wbimage.depthToP, wbimage.wetDryP)
             cf_output.append(cfobj)
-            # cf_output.append((wb[0], wb[1], wb[2], wb[3], wb_anno_out_path, wbimage.depth_from, wbimage.depth_to,
-            # wbimage.wet_dry, wbimage.depth_from_p, wbimage.depth_to_p, wbimage.wet_dry_p))
 
     return cf_output
 
