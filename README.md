@@ -1,4 +1,4 @@
-# pyOCR - Machine Learning Core Photograph Renaming Program
+# Machine Learning Core Photograph Renaming Program
 Program for automatically renaming drill core photographs using machine learning algorithms to detect drill depths and other keywords handwritten on whiteboards. Includes a UI 
 for interactively stepping through photographs and easily making required modifications.
 
